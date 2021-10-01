@@ -1,2 +1,2 @@
-# MIni-SSS3
+# Mini-SSS3
 Repository to hold Mini-SSS3 code
