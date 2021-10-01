@@ -15,10 +15,14 @@ EthernetServer server(80);
 Application app;
 uint8_t buff[2048];
 char buff_c[2048];
-  StaticJsonDocument<200> doc;
+DynamicJsonDocument doc(2048);
 
 bool parse_response(uint8_t *buffer)
 {
+  // Serial.print((char *)buffer);
+  // Serial.println(" EOF");
+  //Serial.println("parse_response");
+
   DeserializationError error = deserializeJson(doc, buffer);
   serializeJsonPretty(doc, Serial);
 
@@ -69,7 +73,6 @@ void update_keySw(Request &req, Response &res)
 
 void setup()
 {
-
   setPinModes();
   SPI.begin();
   Ethernet.init(14); // Most Arduino shields
