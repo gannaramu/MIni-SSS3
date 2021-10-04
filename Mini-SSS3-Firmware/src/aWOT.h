@@ -71,7 +71,7 @@
 #define pgm_read_byte(ptr) (unsigned char)(* ptr)
 #endif
 
-#define P(name) static const unsigned char name[] PROGMEM
+#define P(name) static const unsigned char name[]
 #define SIZE(array) (sizeof(array) / sizeof(*array))
 
 class Request: public Stream {
