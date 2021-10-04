@@ -18,22 +18,22 @@ const Item = styled(Paper)(({ theme }) => ({
 
 export default function PWM(props) {
   const DCChangeHandler = useCallback(({ target: { name, value } }) => {
-    console.log("DC Handler Inputs: ", name, value);
+    // console.log("DC Handler Inputs: ", name, value);
     props.setPWMDuty(name, value);
   });
   const FreqChangeHandler = useCallback(({ target: { name, value } }) => {
-    console.log("Freq Handler Inputs: ", name, value);
+    // console.log("Freq Handler Inputs: ", name, value);
     props.setPWMFreq(name, value);
 
   });
   const SWChangeHandler = useCallback(({ target: { name, checked } }) => {
-    console.log("Switch Handler Inputs: ", name, checked);
+    // console.log("Switch Handler Inputs: ", name, checked);
     props.setPWMSwitch(name,checked)
 
   });
 
   const ApplyHandler = useCallback(({ target: { name, checked } }) => {
-    console.log("Switch Handler Inputs: ", name, checked);
+    // console.log("Switch Handler Inputs: ", name, checked);
     props.post_pwm();
     
 

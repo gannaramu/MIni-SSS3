@@ -20,7 +20,7 @@ import Box from "@mui/material/Box";
 import PWM from "./PWM";
 import Pot from "./Pot";
 
-import { PWMD, Duty, Freq, SW } from "./data";
+import { PWMD, Duty, Freq, SW,PotD,Wiper } from "./data";
 
 function TabPanel(props) {
   const { children, value, index, ...other } = props;
@@ -188,6 +188,12 @@ const pwm4 = PWMD(Duty(50, false, "test_child"), Freq(331, false, "test_child"),
 const pwm5 = PWMD(Duty(50, false, "test_child"), Freq(331, false, "test_child"), SW(false, "test_child"));
 const pwm6 = PWMD(Duty(50, false, "test_child"), Freq(331, false, "test_child"), SW(false, "test_child"));
 
+const pot1 = PotD(Wiper(1, false, "test_child"), SW(false, "test_child"));
+const pot2 = PotD(Wiper(2, false, "test_child"), SW(false, "test_child"));
+const pot3 = PotD(Wiper(3, false, "test_child"), SW(false, "test_child"));
+const pot4 = PotD(Wiper(4, false, "test_child"), SW(false, "test_child"));
+
+
 
 
 class App extends React.Component {
@@ -234,6 +240,12 @@ class App extends React.Component {
         //   switch: { value: false, meta: "" },
         // },
       },
+      pots: {
+        pot1: pot1,
+        pot2: pot2,
+        pot3: pot3,
+        pot4: pot4,
+      }
     };
     this.handleChange = this.handleChange.bind(this);
     // this.setPWMDuty = this.setPWMDuty.bind(this);
@@ -241,6 +253,8 @@ class App extends React.Component {
     this.setPWMDuty = this.setPWMDuty.bind(this);
     this.setPWMFreq = this.setPWMFreq.bind(this);
     this.post_pwm = this.post_pwm.bind(this);
+    this.PostPots = this.PostPots.bind(this);
+    this.setPotWiper = this.setPotWiper.bind(this);
   }
 
   setLedState(state) {
@@ -284,6 +298,28 @@ class App extends React.Component {
     console.log("items: ", items);
     this.setState({
       pwm: items,
+    });
+  }
+
+  setPotState_fromResponse(state) {
+    console.log("input of setPotState from response", state);
+    let items = this.state.pots;
+    for (const [key, value] of Object.entries(state)) {
+      let item = { ...items[key] };
+      for (const [key, wiper] of Object.entries(value)) {
+        console.log(key, wiper);
+        if (!(key in item)) {
+          item[key] = {};
+        }
+        item[key]["value"] = wiper.value;
+        item[key]["error"] = false;
+      
+      }
+      items[key] = item;
+    }
+    console.log("items: ", items);
+    this.setState({
+      pots: items,
     });
   }
 
@@ -348,6 +384,29 @@ class App extends React.Component {
     console.log(this.state);
   }
 
+  async PostPots(name) {
+    console.log("input to post_pot: ", name);
+
+    var myHeaders = new Headers();
+    myHeaders.append("Content-Type", "application/json");
+    var pwm_body = this.state.pots[name];
+    
+    var obj = {};
+    obj[name] = pwm_body;
+    var requestOptions = {
+      method: "POST",
+      headers: myHeaders,
+      body: JSON.stringify(obj),
+      redirect: "follow",
+    };
+    // console.log(requestOptions)
+    let response = await fetch("/pots", requestOptions);
+    let state = await response.json();
+    console.log(state);
+    this.setPWMState_fromResponse(state);
+
+    // console.log(this.state);
+  }
   setPWMFreq(name, freq) {
     console.log("Input of setPWMState", name, freq);
     console.log("State:", this.state.pwm);
@@ -369,6 +428,29 @@ class App extends React.Component {
       pwm: items,
     });
   }
+
+
+  setPotWiper(name, value) {
+    console.log("Input of setPotWiper", name, value);
+    // console.log("State:", this.state.pwm);
+    let items = this.state.pots;
+    console.log("Items:", items);
+    let item = { ...items[name] };
+    console.log("Item:", item);
+    item.wiper.value = value;
+    if (value > 256 || value < 0) {
+      item.wiper.error = true;
+      item.wiper.helperText = "value should be between 0-256";
+    } else {
+      item.wiper.error = false;
+      item.wiper.helperText = "";
+      items[name] = item;
+    }
+    this.setState({
+      pots: items,
+    });
+  }
+
 
   DCChangeHandler(event) {
     console.log("DC Handler Inputs: ", event.target.name, event.target.value);
@@ -419,6 +501,10 @@ class App extends React.Component {
         .then((response) => response.json())
         // .then((state) => console.log(state)),
         .then((state) => this.setPWMState_fromResponse(state)),
+      fetch("/pots")
+        .then((response) => response.json())
+        // .then((state) => console.log(state)),
+        .then((state) => this.setPotState_fromResponse(state)),
     ]);
   }
 
@@ -569,9 +655,32 @@ class App extends React.Component {
             </TabPanel>
             <TabPanel value={this.state.tab} index={1}>
               <Pot
-                data={this.state.pwm.pwm1}
-                setPWMSwitch={this.setPWMSwitch}
-                setPWMDuty={this.setPWMDuty}
+                name="pot1"
+                Title={"Pot1"}
+                data={this.state.pots.pot1}
+                PostPots={this.PostPots}
+                setPotWiper={this.setPotWiper}
+              />
+              <Pot
+                name="pot2"
+                Title={"Pot2"}
+                data={this.state.pots.pot2}
+                PostPots={this.PostPots}
+                setPotWiper={this.setPotWiper}
+              />
+              <Pot
+                name="pot3"
+                Title={"Pot3"}
+                data={this.state.pots.pot3}
+                PostPots={this.PostPots}
+                setPotWiper={this.setPotWiper}
+              />
+              <Pot
+                name="pot4"
+                Title={"Pot4"}
+                data={this.state.pots.pot4}
+                PostPots={this.PostPots}
+                setPotWiper={this.setPotWiper}
               />
             </TabPanel>
             <TabPanel value={this.state.tab} index={2}>

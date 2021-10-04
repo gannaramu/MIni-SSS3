@@ -71,6 +71,80 @@ void update_keySw(Request &req, Response &res)
   // return read_keySw(req, res);
 }
 
+void read_potentiometers(Request &req, Response &res)
+{
+  DynamicJsonDocument response(2048);
+  char json[2048];
+  Serial.print("Got GET Request for Potentiometers, returned: ");
+  response["pot1"]["wiper"]["value"] = SPIpotWiperSettings[0];
+  response["pot1"]["sw"]["value"] = 0;
+  response["pot1"]["sw"]["meta"] = "TBD";
+
+  response["pot2"]["wiper"]["value"] = SPIpotWiperSettings[1];
+  response["pot2"]["sw"]["value"] = 0;
+  response["pot2"]["sw"]["meta"] = "TBD";
+
+  response["pot3"]["wiper"]["value"] = SPIpotWiperSettings[2];
+  response["pot3"]["sw"]["value"] = 0;
+  response["pot3"]["sw"]["meta"] = "TBD";
+
+  response["pot4"]["wiper"]["value"] = SPIpotWiperSettings[3];
+  response["pot4"]["sw"]["value"] = 0;
+  response["pot4"]["sw"]["meta"] = "TBD";
+
+  // serializeJson(response, json);
+  serializeJsonPretty(response, json);
+  Serial.println(json);
+  res.print(json);
+}
+
+int digitalPotWrite(int value, int CS)
+{
+  byte address = 0x00;
+  digitalWrite(CS, LOW);
+  SPI.transfer(address);
+  SPI.transfer(value);
+  digitalWrite(CS, HIGH);
+}
+
+void update_potentiometers(Request &req, Response &res)
+{
+
+  // JsonObject& config = jb.parseObject( &req);
+  Serial.print("Got POST Request for Potentiometers: ");
+  req.body(buff, sizeof(buff));
+  if (!parse_response(buff))
+  {
+    res.print("Not a valid Json Format");
+  }
+  else
+  {
+    if (doc["pot1"])
+    {
+      SPIpotWiperSettings[0] = doc["pot1"]["wiper"]["value"];
+      digitalPotWrite(SPIpotWiperSettings[0], CS_U1);
+    }
+    if (doc["pot2"])
+    {
+      SPIpotWiperSettings[1] = doc["pot2"]["wiper"]["value"];
+      digitalPotWrite(SPIpotWiperSettings[1], CS_U2);
+    }
+    if (doc["pot3"])
+    {
+      SPIpotWiperSettings[2] = doc["pot3"]["wiper"]["value"];
+      digitalPotWrite(SPIpotWiperSettings[2], CS_U3);
+    }
+    if (doc["pot4"])
+    {
+      SPIpotWiperSettings[3] = doc["pot4"]["wiper"]["value"];
+      digitalPotWrite(SPIpotWiperSettings[3], CS_U4);
+    }
+    return read_potentiometers(req, res);
+  }
+}
+
+
+
 void setup()
 {
   setPinModes();
@@ -102,15 +176,18 @@ void setup()
   // print your local IP address:
   Serial.print("My IP address asdasd: ");
   Serial.println(Ethernet.localIP());
-    app.get("/led", &read_keySw);
+  app.get("/led", &read_keySw);
   app.put("/led", &update_keySw);
   app.post("/led", &update_keySw);
+  app.get("/pots", &read_potentiometers);
+  app.post("/pots", &update_potentiometers);
   app.route(staticFiles());
+  server.begin();
 }
 
 void loop()
 {
- EthernetClient client  = server.available();
+  EthernetClient client = server.available();
   // SSLClient client(base_client, TAs, (size_t)TAs_NUM, rand_pin);
 
   // WriteLoggingStream loggingClient(client, Serial);
@@ -123,6 +200,5 @@ void loop()
   {
     app.process(&client);
   }
- 
-
+  
 }

@@ -86,8 +86,8 @@ const int8_t ignitionCtlPin = 16;
 /*
  * Begin Default Settings
 */
-// const uint8_t numSPIpots = 16;
-// uint8_t SPIpotWiperSettings[numSPIpots] = {21, 22, 22, 56, 56, 0, 10, 56, 56, 30, 56, 56, 56, 56, 56, 255};
+const uint8_t numSPIpots = 16;
+uint8_t SPIpotWiperSettings[numSPIpots] = {21, 56, 56, 255};
 // uint8_t SPIpotTCONSettings[numSPIpots] = {3, 3, 3, 7, 7, 3, 3, 7, 7, 7, 0, 0, 7, 7, 7, 0};
 
 // const uint8_t numI2Cpots = 3;
