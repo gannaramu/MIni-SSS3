@@ -4,4 +4,4 @@ Repository to hold Mini-SSS3 code
 
 
 ## GUI Demo
-![TEST](./docs/Animation-sss3-pots.gif)
+![TEST](./docs/Animation-sss3-pots-2.gif)
