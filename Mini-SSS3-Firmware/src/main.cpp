@@ -5,7 +5,7 @@
 #include "StaticFiles.h"
 #include <ArduinoJson.h>
 #include "Mini_SSS3_board_defs_rev_2.h"
-
+#include <Microchip_PAC193x.h>
 // Enter a MAC address for your controller below.
 // Newer Ethernet shields have a MAC address printed on a sticker on the shield
 byte mac[] = {
@@ -16,6 +16,7 @@ Application app;
 uint8_t buff[2048];
 char buff_c[2048];
 DynamicJsonDocument doc(2048);
+Microchip_PAC193x PAC;
 
 bool parse_response(uint8_t *buffer)
 {
@@ -143,11 +144,33 @@ void update_potentiometers(Request &req, Response &res)
   }
 }
 
+void read_pac1934(Request &req, Response &res){
+  Serial.print("Got GET Request for PAC1934: ");
+  DynamicJsonDocument response(2048);
+  char json[2048];
+  Serial.print("Got GET Request for Potentiometers, returned: ");
+  PAC.UpdateVoltage();
+  float temp = PAC.Voltage1;
+  response["pot1"]["voltage"] = PAC.Voltage1/1000;
+  response["pot1"]["current"] = -1;
+  response["pot2"]["voltage"] = PAC.Voltage2/1000;
+  response["pot2"]["current"] = -1;
+  response["pot3"]["voltage"] = PAC.Voltage4/1000;
+  response["pot3"]["current"] = -1;
+  response["pot4"]["voltage"] = PAC.Voltage3/1000;
+  response["pot4"]["current"] = -1;
 
+
+  serializeJsonPretty(response, json);
+  Serial.println(json);
+  res.print(json);
+}
 
 void setup()
 {
   setPinModes();
+  Wire.begin();
+
   SPI.begin();
   Ethernet.init(14); // Most Arduino shields
 
@@ -181,6 +204,7 @@ void setup()
   app.post("/led", &update_keySw);
   app.get("/pots", &read_potentiometers);
   app.post("/pots", &update_potentiometers);
+  app.get("/voltage", &read_pac1934);
   app.route(staticFiles());
   server.begin();
 }

@@ -2,7 +2,7 @@ import * as React from "react";
 import { useState, useCallback } from "react";
 import { styled } from "@mui/material/styles";
 import Paper from "@mui/material/Paper";
-import { Switch, Button, TextField,Box,Typography } from "@mui/material";
+import { Switch, Button, TextField,Box,Typography,Alert   } from "@mui/material";
 import Stack from "@mui/material/Stack";
 import { useEffect } from "react";
 
@@ -33,6 +33,7 @@ export default function Pot(props) {
   });
   useEffect(() => {
     // console.log(props.data);
+    
   });
   return (
     <div>
@@ -74,6 +75,12 @@ export default function Pot(props) {
             Apply
           </Button>
         </Box>
+        <Box sx={{ "& button": { m: 1 } }}>
+        {/* <Chip label={props.data.monitor.voltage}  color="primary" variant="outlined"/> */}
+        
+        <Alert variant="standard"  icon={false} severity="info" style={{width:130}}>{props.data.monitor.voltage  +" V" }</Alert> 
+        </Box>
+        
       </Stack>
     </div>
   );

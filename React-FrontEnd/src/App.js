@@ -20,7 +20,7 @@ import Box from "@mui/material/Box";
 import PWM from "./PWM";
 import Pot from "./Pot";
 
-import { PWMD, Duty, Freq, SW,PotD,Wiper } from "./data";
+import { PWMD, Duty, Freq, SW,PotD,Wiper,Monitor} from "./data";
 
 function TabPanel(props) {
   const { children, value, index, ...other } = props;
@@ -188,10 +188,10 @@ const pwm4 = PWMD(Duty(50, false, "test_child"), Freq(331, false, "test_child"),
 const pwm5 = PWMD(Duty(50, false, "test_child"), Freq(331, false, "test_child"), SW(false, "test_child"));
 const pwm6 = PWMD(Duty(50, false, "test_child"), Freq(331, false, "test_child"), SW(false, "test_child"));
 
-const pot1 = PotD(Wiper(1, false, "test_child"), SW(false, "test_child"));
-const pot2 = PotD(Wiper(2, false, "test_child"), SW(false, "test_child"));
-const pot3 = PotD(Wiper(3, false, "test_child"), SW(false, "test_child"));
-const pot4 = PotD(Wiper(4, false, "test_child"), SW(false, "test_child"));
+const pot1 = PotD(Wiper(1, false, "test_child"), SW(false, "test_child"),Monitor(0,0));
+const pot2 = PotD(Wiper(2, false, "test_child"), SW(false, "test_child"),Monitor(0,0));
+const pot3 = PotD(Wiper(3, false, "test_child"), SW(false, "test_child"),Monitor(0,0));
+const pot4 = PotD(Wiper(4, false, "test_child"), SW(false, "test_child"),Monitor(0,0));
 
 
 
@@ -314,6 +314,24 @@ class App extends React.Component {
         item[key]["value"] = wiper.value;
         item[key]["error"] = false;
       
+      }
+      items[key] = item;
+    }
+    console.log("items: ", items);
+    this.setState({
+      pots: items,
+    });
+  }
+
+  setPotMonitor_fromResponse(state) {
+    console.log("input of setPotState from response", state);
+    let items = this.state.pots;
+    for (const [key, value] of Object.entries(state)) {
+      let item = { ...items[key] };
+      for (const [key2, value] of Object.entries(value)) {
+        console.log(key, key2,value);
+        console.log(item);
+        item["monitor"][key2] = value;      
       }
       items[key] = item;
     }
@@ -506,6 +524,10 @@ class App extends React.Component {
         // .then((state) => console.log(state)),
         .then((state) => this.setPotState_fromResponse(state)),
     ]);
+    const interval=setInterval(()=>{
+      this.read_voltage()
+     },1000)
+
   }
 
   async handleStateChange(ledOn) {
@@ -538,6 +560,12 @@ class App extends React.Component {
       ledOn: state !== "0",
     });
     console.log(this.state);
+  }
+
+  async read_voltage() {
+    fetch("/voltage")
+    .then((response) => response.json())
+    .then((state) => this.setPotMonitor_fromResponse(state));
   }
 
   render() {
