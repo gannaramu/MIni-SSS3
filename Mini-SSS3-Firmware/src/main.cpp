@@ -23,7 +23,7 @@ FlexCAN_T4<CAN1, RX_SIZE_256, TX_SIZE_16> can1;
 FlexCAN_T4<CAN2, RX_SIZE_256, TX_SIZE_16> can2;
 CAN_message_t msg;
 StaticJsonDocument<2048> can_dict;
-
+bool DEBUG = true;
 bool parse_response(uint8_t *buffer)
 {
   // Serial.print((char *)buffer);
@@ -35,8 +35,8 @@ bool parse_response(uint8_t *buffer)
 
   if (error)
   {
-    Serial.print(F("deserializeJson() failed: "));
-    Serial.println(error.f_str());
+    if (DEBUG) Serial.print(F("deserializeJson() failed: "));
+    if (DEBUG) Serial.println(error.f_str());
     return false;
   }
 
@@ -45,8 +45,8 @@ bool parse_response(uint8_t *buffer)
 
 void read_keySw(Request &req, Response &res)
 {
-  Serial.print("Got GET Request for LED returned: ");
-  Serial.println(ignitionCtlState);
+  if (DEBUG) Serial.print("Got GET Request for LED returned: ");
+  if (DEBUG) Serial.println(ignitionCtlState);
   res.print(ignitionCtlState);
 }
 
@@ -54,7 +54,7 @@ void update_keySw(Request &req, Response &res)
 {
 
   // JsonObject& config = jb.parseObject( &req);
-  Serial.print("Got POST Request for LED: ");
+  if (DEBUG) Serial.print("Got POST Request for LED: ");
   req.body(buff, sizeof(buff));
   if (!parse_response(buff))
   {
@@ -82,7 +82,7 @@ void read_potentiometers(Request &req, Response &res)
 {
   DynamicJsonDocument response(2048);
   char json[2048];
-  Serial.print("Got GET Request for Potentiometers, returned: ");
+  if (DEBUG) Serial.print("Got GET Request for Potentiometers, returned: ");
   response["pot1"]["wiper"]["value"] = SPIpotWiperSettings[0];
   response["pot1"]["sw"]["value"] = 0;
   response["pot1"]["sw"]["meta"] = "TBD";
@@ -101,7 +101,7 @@ void read_potentiometers(Request &req, Response &res)
 
   // serializeJson(response, json);
   serializeJsonPretty(response, json);
-  Serial.println(json);
+  if (DEBUG) Serial.println(json);
   res.print(json);
 }
 
@@ -118,7 +118,7 @@ void update_potentiometers(Request &req, Response &res)
 {
 
   // JsonObject& config = jb.parseObject( &req);
-  Serial.print("Got POST Request for Potentiometers: ");
+  if (DEBUG) Serial.print("Got POST Request for Potentiometers: ");
   req.body(buff, sizeof(buff));
   if (!parse_response(buff))
   {
@@ -152,10 +152,10 @@ void update_potentiometers(Request &req, Response &res)
 
 void read_pac1934(Request &req, Response &res)
 {
-  Serial.print("Got GET Request for PAC1934: ");
+  if (DEBUG) Serial.print("Got GET Request for PAC1934: ");
   DynamicJsonDocument response(2048);
   char json[2048];
-  Serial.print("Got GET Request for Potentiometers, returned: ");
+  if (DEBUG) Serial.print("Got GET Request for Potentiometers, returned: ");
   PAC.UpdateVoltage();
   float temp = PAC.Voltage1;
   response["pot1"]["voltage"] = PAC.Voltage1 / 1000;
@@ -168,16 +168,16 @@ void read_pac1934(Request &req, Response &res)
   response["pot4"]["current"] = -1;
 
   serializeJsonPretty(response, json);
-  Serial.println(json);
+  if (DEBUG) Serial.println(json);
   res.print(json);
 }
 
 void read_CAN(Request &req, Response &res)
 {
-  Serial.print("Got GET Request for Read CAN: ");
+  if (DEBUG) Serial.print("Got GET Request for Read CAN: ");
   char json[2048];
   serializeJsonPretty(can_dict, json);
-  // Serial.println(json);
+  // if (DEBUG) Serial.println(json);
   res.print(json);
 }
 
@@ -205,7 +205,7 @@ void setup()
   // Check for Ethernet hardware present
   if (Ethernet.hardwareStatus() == EthernetNoHardware)
   {
-    Serial.println("Ethernet shield was not found.  Sorry, can't run without hardware. :(");
+    if (DEBUG) Serial.println("Ethernet shield was not found.  Sorry, can't run without hardware. :(");
     while (true)
     {
       delay(1); // do nothing, no point running without Ethernet hardware
@@ -213,11 +213,11 @@ void setup()
   }
   if (Ethernet.linkStatus() == LinkOFF)
   {
-    Serial.println("Ethernet cable is not connected.");
+    if (DEBUG) Serial.println("Ethernet cable is not connected.");
   }
   // print your local IP address:
-  Serial.print("My IP address asdasd: ");
-  Serial.println(Ethernet.localIP());
+  if (DEBUG) Serial.print("My IP address asdasd: ");
+  if (DEBUG) Serial.println(Ethernet.localIP());
   app.get("/led", &read_keySw);
   app.put("/led", &update_keySw);
   app.post("/led", &update_keySw);
@@ -271,18 +271,6 @@ void loop()
     {
       can_dict[CAN_ID]["count"] = 1;
     }
-    // Serial.print("  ID: 0x"); Serial.print(msg.id, HEX );
-    // Serial.print("  LEN: "); Serial.print(msg.len);
-    // Serial.print(" DATA: ");
-    // for ( uint8_t i = 0; i < 8; i++ ) {
-    //   Serial.print(msg.buf[i]); Serial.print(" ");
-    // }
-    // Serial.print("  TS: "); Serial.println(msg.timestamp);
-    // delay(10);
-    Serial.print("CAN Json:");
-
-    serializeJsonPretty(can_dict, Serial);
-
     digitalWrite(greenLEDpin, LOW);
   }
   // else if ( can2.read(msg) ) {

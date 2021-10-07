@@ -309,20 +309,20 @@ class App extends React.Component {
   }
 
   handleChange(event, newValue) {
-    console.log(event, newValue);
+    //console.log(event, newValue);
     this.setState({
       tab: newValue,
     });
   }
 
   setPWMState_fromResponse(state) {
-    console.log("input of setPWMstatea from response", state);
+    //console.log("input of setPWMstatea from response", state);
     let items = this.state.pwm;
     for (const [key, value] of Object.entries(state)) {
       let item = { ...items[key] };
       item["freq"] = {};
       for (const [key, duty] of Object.entries(value)) {
-        console.log(key, duty);
+        //console.log(key, duty);
         if (!(key in item)) {
           item[key] = {};
         }
@@ -335,19 +335,19 @@ class App extends React.Component {
       }
       items[key] = item;
     }
-    console.log("items: ", items);
+    //console.log("items: ", items);
     this.setState({
       pwm: items,
     });
   }
 
   setPotState_fromResponse(state) {
-    console.log("input of setPotState from response", state);
+    //console.log("input of setPotState from response", state);
     let items = this.state.pots;
     for (const [key, value] of Object.entries(state)) {
       let item = { ...items[key] };
       for (const [key, wiper] of Object.entries(value)) {
-        console.log(key, wiper);
+        //console.log(key, wiper);
         if (!(key in item)) {
           item[key] = {};
         }
@@ -356,41 +356,41 @@ class App extends React.Component {
       }
       items[key] = item;
     }
-    console.log("items: ", items);
+    //console.log("items: ", items);
     this.setState({
       pots: items,
     });
   }
 
   setPotMonitor_fromResponse(state) {
-    // console.log("input of setPotMonitor from response", state);
+    // //console.log("input of setPotMonitor from response", state);
     let items = this.state.pots;
     for (const [key, value] of Object.entries(state)) {
       let item = { ...items[key] };
       for (const [key2, value] of Object.entries(value)) {
-        // console.log(key, key2,value);
-        // console.log(item);
+        // //console.log(key, key2,value);
+        // //console.log(item);
         item["monitor"][key2] = value;
       }
       items[key] = item;
     }
-    // console.log("items: ", items);
+    // //console.log("items: ", items);
     this.setState({
       pots: items,
     });
   }
 
   setCAN_fromResponse(state) {
-    console.log("input of setCAN from response", state);
+    ////console.log("input of setCAN from response", state);
     let items = this.state.can_rows;
     if(state){
     for (const [key, value] of Object.entries(state)) {
       //   let item = { ...items[key] };
       //   for (const [key2, value] of Object.entries(value)) {
-      // console.log(key);
+      // ////console.log(key);
       let item = { ...items[key] };
       if (!(key in items)) {
-        console.log("Here");
+        ////console.log("Here");
         item = CANData(
           value.ID,
           value.count,
@@ -419,25 +419,25 @@ class App extends React.Component {
         item.B7 = value.DATA[7];
       }
       // item.ID = value.ID;
-      // console.log("item: ",item);
+      // ////console.log("item: ",item);
 
       //   }
       items[key] = item;
     }
   }
-    // console.log("items: ", items);
+    // ////console.log("items: ", items);
     // this.setState({
     //   pots: items,
     // });
   }
 
   setPWMDuty(name, duty) {
-    console.log("Input of setPWMDuty", name, duty);
-    // console.log("State:", this.state.pwm);
+    //console.log("Input of setPWMDuty", name, duty);
+    // //console.log("State:", this.state.pwm);
     let items = this.state.pwm;
-    console.log("Items:", items);
+    //console.log("Items:", items);
     let item = { ...items[name] };
-    console.log("Item:", item);
+    //console.log("Item:", item);
     item.duty.value = duty;
     if (duty > 4096 || duty < 0) {
       item.duty.error = true;
@@ -453,11 +453,11 @@ class App extends React.Component {
   }
 
   setPWMSwitch(name, value) {
-    console.log("Input of setPWMSwitch", name, value);
+    //console.log("Input of setPWMSwitch", name, value);
     let items = this.state.pwm;
-    console.log("Items:", items);
+    //console.log("Items:", items);
     let item = { ...items[name] };
-    console.log("Item:", item);
+    //console.log("Item:", item);
     item.sw.value = value;
     items[name] = item;
 
@@ -468,7 +468,7 @@ class App extends React.Component {
   }
 
   async post_pwm() {
-    console.log("input to post_pwm: ", this.state.pwm);
+    //console.log("input to post_pwm: ", this.state.pwm);
 
     var myHeaders = new Headers();
     myHeaders.append("Content-Type", "application/json");
@@ -484,16 +484,16 @@ class App extends React.Component {
 
     let response = await fetch("/pwm", requestOptions);
     let state = await response.json();
-    console.log(state);
+    //console.log(state);
     this.setPWMState_fromResponse(state);
     // this.setState({
     //   ledOn: state !== "0",
     // });
-    console.log(this.state);
+    //console.log(this.state);
   }
 
   async PostPots(name) {
-    console.log("input to post_pot: ", name);
+    //console.log("input to post_pot: ", name);
 
     var myHeaders = new Headers();
     myHeaders.append("Content-Type", "application/json");
@@ -507,21 +507,21 @@ class App extends React.Component {
       body: JSON.stringify(obj),
       redirect: "follow",
     };
-    // console.log(requestOptions)
+    // //console.log(requestOptions)
     let response = await fetch("/pots", requestOptions);
     let state = await response.json();
-    console.log(state);
+    //console.log(state);
     this.setPWMState_fromResponse(state);
 
-    // console.log(this.state);
+    // //console.log(this.state);
   }
   setPWMFreq(name, freq) {
-    console.log("Input of setPWMState", name, freq);
-    console.log("State:", this.state.pwm);
+    //console.log("Input of setPWMState", name, freq);
+    //console.log("State:", this.state.pwm);
     let items = this.state.pwm;
-    console.log("Items:", items);
+    //console.log("Items:", items);
     let item = { ...items[name] };
-    console.log("Item:", item);
+    //console.log("Item:", item);
     item.freq.value = freq;
     if (freq > 4096 || freq < 0) {
       item.freq.error = true;
@@ -538,12 +538,12 @@ class App extends React.Component {
   }
 
   setPotWiper(name, value) {
-    console.log("Input of setPotWiper", name, value);
-    // console.log("State:", this.state.pwm);
+    //console.log("Input of setPotWiper", name, value);
+    // //console.log("State:", this.state.pwm);
     let items = this.state.pots;
-    console.log("Items:", items);
+    //console.log("Items:", items);
     let item = { ...items[name] };
-    console.log("Item:", item);
+    //console.log("Item:", item);
     item.wiper.value = value;
     if (value > 256 || value < 0) {
       item.wiper.error = true;
@@ -559,7 +559,7 @@ class App extends React.Component {
   }
 
   DCChangeHandler(event) {
-    console.log("DC Handler Inputs: ", event.target.name, event.target.value);
+    //console.log("DC Handler Inputs: ", event.target.name, event.target.value);
     let value = event.target.value;
     let name = event.target.name;
 
@@ -567,11 +567,11 @@ class App extends React.Component {
   }
 
   SwitchHandler(event) {
-    console.log(
-      "SwitchHandler Inputs: ",
-      event.target.name,
-      event.target.checked
-    );
+    // console.log(
+    //   "SwitchHandler Inputs: ",
+    //   event.target.name,
+    //   event.target.checked
+    // );
     let value = event.target.checked;
     let name = event.target.name;
 
@@ -579,11 +579,11 @@ class App extends React.Component {
   }
 
   FreqChangeHandler(event) {
-    console.log(
-      "Freq Change Handler Inputs: ",
-      event.target.name,
-      event.target.value
-    );
+    //console.log(
+    //   "Freq Change Handler Inputs: ",
+    //   event.target.name,
+    //   event.target.value
+    // );
     let value = event.target.value;
     let name = event.target.name;
 
@@ -605,11 +605,11 @@ class App extends React.Component {
         .then((state) => this.setLedState(state)),
       fetch("/pwm")
         .then((response) => response.json())
-        // .then((state) => console.log(state)),
+        // .then((state) => //console.log(state)),
         .then((state) => this.setPWMState_fromResponse(state)),
       fetch("/pots")
         .then((response) => response.json())
-        // .then((state) => console.log(state)),
+        // .then((state) => //console.log(state)),
         .then((state) => this.setPotState_fromResponse(state)),
     ]);
     const interval = setInterval(() => {
@@ -621,13 +621,13 @@ class App extends React.Component {
   }
 
   async handleStateChange(ledOn) {
-    // console.log("input to handleStateChange: ", ledOn);
+    // //console.log("input to handleStateChange: ", ledOn);
     this.setPWMDuty("pwm1", 48);
-    console.log(this.state.pwm);
+    //console.log(this.state.pwm);
   }
 
   async handleStateChange2(event) {
-    console.log("input to handleStateChange2: ", event.target.checked);
+    //console.log("input to handleStateChange2: ", event.target.checked);
 
     var myHeaders = new Headers();
     myHeaders.append("Content-Type", "application/json");
@@ -645,11 +645,11 @@ class App extends React.Component {
 
     const response = await fetch("/led", requestOptions);
     const state = await response.text();
-    console.log(state);
+    //console.log(state);
     this.setState({
       ledOn: state !== "0",
     });
-    console.log(this.state);
+    //console.log(this.state);
   }
 
   async read_voltage() {
