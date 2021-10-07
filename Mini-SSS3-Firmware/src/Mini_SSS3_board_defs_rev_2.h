@@ -64,6 +64,7 @@ const int8_t CS_U3 = 9;
 const int8_t CS_U4 = 10;
 const int8_t ignitionCtlPin = 16;
 
+const int8_t silent = 15;
 
 // const int8_t IH1Pin = 35;
 
@@ -127,17 +128,16 @@ void setPinModes()
     pinMode(CS_U2, OUTPUT);
     pinMode(CS_U3, OUTPUT);
     pinMode(CS_U4, OUTPUT);
+    pinMode(silent, OUTPUT);
 
     digitalWrite(CS_U1, HIGH);
     digitalWrite(CS_U2, HIGH);
     digitalWrite(CS_U3, HIGH);
     digitalWrite(CS_U4, HIGH);
+    digitalWrite(silent, LOW);
    
     digitalWrite(redLEDpin, HIGH);
     digitalWrite(greenLEDpin, HIGH);
-    // digitalWrite(IH2Pin, LOW);
-    // digitalWrite(IL1Pin, LOW);
-    // digitalWrite(IL2Pin, LOW);
     digitalWrite(ignitionCtlPin, LOW);
     analogWriteResolution(12); // analogWrite value 0 to 4095, or 4096 for high
 

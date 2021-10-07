@@ -6,6 +6,8 @@
 #include <ArduinoJson.h>
 #include "Mini_SSS3_board_defs_rev_2.h"
 #include <Microchip_PAC193x.h>
+#include <FlexCAN_T4.h>
+
 // Enter a MAC address for your controller below.
 // Newer Ethernet shields have a MAC address printed on a sticker on the shield
 byte mac[] = {
@@ -17,6 +19,10 @@ uint8_t buff[2048];
 char buff_c[2048];
 DynamicJsonDocument doc(2048);
 Microchip_PAC193x PAC;
+FlexCAN_T4<CAN1, RX_SIZE_256, TX_SIZE_16> can1;
+FlexCAN_T4<CAN2, RX_SIZE_256, TX_SIZE_16> can2;
+CAN_message_t msg;
+StaticJsonDocument<2048> can_dict;
 
 bool parse_response(uint8_t *buffer)
 {
@@ -144,27 +150,37 @@ void update_potentiometers(Request &req, Response &res)
   }
 }
 
-void read_pac1934(Request &req, Response &res){
+void read_pac1934(Request &req, Response &res)
+{
   Serial.print("Got GET Request for PAC1934: ");
   DynamicJsonDocument response(2048);
   char json[2048];
   Serial.print("Got GET Request for Potentiometers, returned: ");
   PAC.UpdateVoltage();
   float temp = PAC.Voltage1;
-  response["pot1"]["voltage"] = PAC.Voltage1/1000;
+  response["pot1"]["voltage"] = PAC.Voltage1 / 1000;
   response["pot1"]["current"] = -1;
-  response["pot2"]["voltage"] = PAC.Voltage2/1000;
+  response["pot2"]["voltage"] = PAC.Voltage2 / 1000;
   response["pot2"]["current"] = -1;
-  response["pot3"]["voltage"] = PAC.Voltage4/1000;
+  response["pot3"]["voltage"] = PAC.Voltage4 / 1000;
   response["pot3"]["current"] = -1;
-  response["pot4"]["voltage"] = PAC.Voltage3/1000;
+  response["pot4"]["voltage"] = PAC.Voltage3 / 1000;
   response["pot4"]["current"] = -1;
-
 
   serializeJsonPretty(response, json);
   Serial.println(json);
   res.print(json);
 }
+
+void read_CAN(Request &req, Response &res)
+{
+  Serial.print("Got GET Request for Read CAN: ");
+  char json[2048];
+  serializeJsonPretty(can_dict, json);
+  // Serial.println(json);
+  res.print(json);
+}
+
 
 void setup()
 {
@@ -173,7 +189,10 @@ void setup()
 
   SPI.begin();
   Ethernet.init(14); // Most Arduino shields
-
+  can1.begin();
+  can1.setBaudRate(250000);
+  can2.begin();
+  can2.setBaudRate(250000);
   // Open serial communications and wait for port to open:
   Serial.begin(9600);
   while (!Serial)
@@ -205,6 +224,7 @@ void setup()
   app.get("/pots", &read_potentiometers);
   app.post("/pots", &update_potentiometers);
   app.get("/voltage", &read_pac1934);
+  app.get("/can", &read_CAN);
   app.route(staticFiles());
   server.begin();
 }
@@ -224,5 +244,57 @@ void loop()
   {
     app.process(&client);
   }
-  
+  if (can1.read(msg))
+  {
+    digitalWrite(greenLEDpin, HIGH);
+    // Serial.print("CAN1 ");
+    // Serial.print("MB: "); Serial.print(msg.mb);
+    char CAN_ID[32];
+    itoa(msg.id, CAN_ID, 16);
+    // Serial.print("  ID: 0x"); Serial.println(outputString);
+    bool hasID = can_dict.containsKey(CAN_ID); // true
+    if (hasID)
+    {
+      int count = can_dict[CAN_ID]["count"];
+      can_dict[CAN_ID]["count"] = count + 1;
+      can_dict[CAN_ID]["LEN"] = msg.len;
+      can_dict[CAN_ID]["ID"] = CAN_ID;
+      for (uint8_t i = 0; i < 8; i++)
+      {
+        char CAN_data[4];
+        // itoa( msg.buf[i], CAN_data, 16);
+        sprintf(CAN_data, "%02X", msg.buf[i]);
+        can_dict[CAN_ID]["DATA"][i] = CAN_data; 
+      }
+    }
+    else
+    {
+      can_dict[CAN_ID]["count"] = 1;
+    }
+    // Serial.print("  ID: 0x"); Serial.print(msg.id, HEX );
+    // Serial.print("  LEN: "); Serial.print(msg.len);
+    // Serial.print(" DATA: ");
+    // for ( uint8_t i = 0; i < 8; i++ ) {
+    //   Serial.print(msg.buf[i]); Serial.print(" ");
+    // }
+    // Serial.print("  TS: "); Serial.println(msg.timestamp);
+    // delay(10);
+    Serial.print("CAN Json:");
+
+    serializeJsonPretty(can_dict, Serial);
+
+    digitalWrite(greenLEDpin, LOW);
+  }
+  // else if ( can2.read(msg) ) {
+  //   Serial.print("CAN2 ");
+  //   Serial.print("MB: "); Serial.print(msg.mb);
+  //   Serial.print("  ID: 0x"); Serial.print(msg.id, HEX );
+  //   Serial.print("  EXT: "); Serial.print(msg.flags.extended );
+  //   Serial.print("  LEN: "); Serial.print(msg.len);
+  //   Serial.print(" DATA: ");
+  //   for ( uint8_t i = 0; i < 8; i++ ) {
+  //     Serial.print(msg.buf[i]); Serial.print(" ");
+  //   }
+  //   Serial.print("  TS: "); Serial.println(msg.timestamp);
+  // }
 }

@@ -19,8 +19,9 @@ import Tab from "@mui/material/Tab";
 import Box from "@mui/material/Box";
 import PWM from "./PWM";
 import Pot from "./Pot";
+import CAN_Table from "./CAN_Table";
 
-import { PWMD, Duty, Freq, SW,PotD,Wiper,Monitor} from "./data";
+import { PWMD, Duty, Freq, SW, PotD, Wiper, Monitor, CANData } from "./data";
 
 function TabPanel(props) {
   const { children, value, index, ...other } = props;
@@ -180,21 +181,59 @@ const MaterialUISwitch = styled(Switch)(({ theme }) => ({
 }));
 const DC_desc = "Duty Cycle";
 
+const pwm1 = PWMD(
+  Duty(50, false, "test_child"),
+  Freq(331, false, "test_child"),
+  SW(false, "test_child")
+);
+const pwm2 = PWMD(
+  Duty(50, false, "test_child"),
+  Freq(331, false, "test_child"),
+  SW(false, "test_child")
+);
+const pwm3 = PWMD(
+  Duty(50, false, "test_child"),
+  Freq(331, false, "test_child"),
+  SW(false, "test_child")
+);
+const pwm4 = PWMD(
+  Duty(50, false, "test_child"),
+  Freq(331, false, "test_child"),
+  SW(false, "test_child")
+);
+const pwm5 = PWMD(
+  Duty(50, false, "test_child"),
+  Freq(331, false, "test_child"),
+  SW(false, "test_child")
+);
+const pwm6 = PWMD(
+  Duty(50, false, "test_child"),
+  Freq(331, false, "test_child"),
+  SW(false, "test_child")
+);
 
-const pwm1 = PWMD(Duty(50, false, "test_child"), Freq(331, false, "test_child"), SW(false, "test_child"));
-const pwm2 = PWMD(Duty(50, false, "test_child"), Freq(331, false, "test_child"), SW(false, "test_child"));
-const pwm3 = PWMD(Duty(50, false, "test_child"), Freq(331, false, "test_child"), SW(false, "test_child"));
-const pwm4 = PWMD(Duty(50, false, "test_child"), Freq(331, false, "test_child"), SW(false, "test_child"));
-const pwm5 = PWMD(Duty(50, false, "test_child"), Freq(331, false, "test_child"), SW(false, "test_child"));
-const pwm6 = PWMD(Duty(50, false, "test_child"), Freq(331, false, "test_child"), SW(false, "test_child"));
+const pot1 = PotD(
+  Wiper(1, false, "test_child"),
+  SW(false, "test_child"),
+  Monitor(0, 0)
+);
+const pot2 = PotD(
+  Wiper(2, false, "test_child"),
+  SW(false, "test_child"),
+  Monitor(0, 0)
+);
+const pot3 = PotD(
+  Wiper(3, false, "test_child"),
+  SW(false, "test_child"),
+  Monitor(0, 0)
+);
+const pot4 = PotD(
+  Wiper(4, false, "test_child"),
+  SW(false, "test_child"),
+  Monitor(0, 0)
+);
 
-const pot1 = PotD(Wiper(1, false, "test_child"), SW(false, "test_child"),Monitor(0,0));
-const pot2 = PotD(Wiper(2, false, "test_child"), SW(false, "test_child"),Monitor(0,0));
-const pot3 = PotD(Wiper(3, false, "test_child"), SW(false, "test_child"),Monitor(0,0));
-const pot4 = PotD(Wiper(4, false, "test_child"), SW(false, "test_child"),Monitor(0,0));
-
-
-
+const can1 = CANData("0xDEAD", 159, 8, 1, 2, 3, 4, 5, 6, 7, 8);
 
 class App extends React.Component {
   constructor(props) {
@@ -245,7 +284,8 @@ class App extends React.Component {
         pot2: pot2,
         pot3: pot3,
         pot4: pot4,
-      }
+      },
+      can_rows: [],
     };
     this.handleChange = this.handleChange.bind(this);
     // this.setPWMDuty = this.setPWMDuty.bind(this);
@@ -313,7 +353,6 @@ class App extends React.Component {
         }
         item[key]["value"] = wiper.value;
         item[key]["error"] = false;
-      
       }
       items[key] = item;
     }
@@ -324,21 +363,72 @@ class App extends React.Component {
   }
 
   setPotMonitor_fromResponse(state) {
-    console.log("input of setPotState from response", state);
+    // console.log("input of setPotMonitor from response", state);
     let items = this.state.pots;
     for (const [key, value] of Object.entries(state)) {
       let item = { ...items[key] };
       for (const [key2, value] of Object.entries(value)) {
-        console.log(key, key2,value);
-        console.log(item);
-        item["monitor"][key2] = value;      
+        // console.log(key, key2,value);
+        // console.log(item);
+        item["monitor"][key2] = value;
       }
       items[key] = item;
     }
-    console.log("items: ", items);
+    // console.log("items: ", items);
     this.setState({
       pots: items,
     });
+  }
+
+  setCAN_fromResponse(state) {
+    console.log("input of setCAN from response", state);
+    let items = this.state.can_rows;
+    if(state){
+    for (const [key, value] of Object.entries(state)) {
+      //   let item = { ...items[key] };
+      //   for (const [key2, value] of Object.entries(value)) {
+      // console.log(key);
+      let item = { ...items[key] };
+      if (!(key in items)) {
+        console.log("Here");
+        item = CANData(
+          value.ID,
+          value.count,
+          value.LEN,
+          value.DATA[0],
+          value.DATA[1],
+          value.DATA[2],
+          value.DATA[3],
+          value.DATA[4],
+          value.DATA[5],
+          value.DATA[6],
+          value.DATA[7]
+        );
+      }
+      else{
+        item.ID = value.ID;
+        item.Count = value.count;
+        item.LEN = value.LEN;
+        item.B0 = value.DATA[0];
+        item.B1 = value.DATA[1];
+        item.B2 = value.DATA[2];
+        item.B3 = value.DATA[3];
+        item.B4 = value.DATA[4];
+        item.B5 = value.DATA[5];
+        item.B6 = value.DATA[6];
+        item.B7 = value.DATA[7];
+      }
+      // item.ID = value.ID;
+      // console.log("item: ",item);
+
+      //   }
+      items[key] = item;
+    }
+  }
+    // console.log("items: ", items);
+    // this.setState({
+    //   pots: items,
+    // });
   }
 
   setPWMDuty(name, duty) {
@@ -408,7 +498,7 @@ class App extends React.Component {
     var myHeaders = new Headers();
     myHeaders.append("Content-Type", "application/json");
     var pwm_body = this.state.pots[name];
-    
+
     var obj = {};
     obj[name] = pwm_body;
     var requestOptions = {
@@ -447,7 +537,6 @@ class App extends React.Component {
     });
   }
 
-
   setPotWiper(name, value) {
     console.log("Input of setPotWiper", name, value);
     // console.log("State:", this.state.pwm);
@@ -468,7 +557,6 @@ class App extends React.Component {
       pots: items,
     });
   }
-
 
   DCChangeHandler(event) {
     console.log("DC Handler Inputs: ", event.target.name, event.target.value);
@@ -524,10 +612,12 @@ class App extends React.Component {
         // .then((state) => console.log(state)),
         .then((state) => this.setPotState_fromResponse(state)),
     ]);
-    const interval=setInterval(()=>{
-      this.read_voltage()
-     },1000)
-
+    const interval = setInterval(() => {
+      this.read_voltage();
+    }, 1000);
+    const can_interval = setInterval(() => {
+      this.read_CAN();
+    }, 100);
   }
 
   async handleStateChange(ledOn) {
@@ -564,8 +654,14 @@ class App extends React.Component {
 
   async read_voltage() {
     fetch("/voltage")
-    .then((response) => response.json())
-    .then((state) => this.setPotMonitor_fromResponse(state));
+      .then((response) => response.json())
+      .then((state) => this.setPotMonitor_fromResponse(state));
+  }
+
+  async read_CAN() {
+    fetch("/can")
+      .then((response) => response.json())
+      .then((state) => this.setCAN_fromResponse(state));
   }
 
   render() {
@@ -614,7 +710,6 @@ class App extends React.Component {
               </Tabs>
             </Box>
             <TabPanel value={this.state.tab} index={0}>
-             
               <PWM
                 name="pwm1"
                 data={this.state.pwm.pwm1}
@@ -634,7 +729,6 @@ class App extends React.Component {
                 setPWMFreq={this.setPWMFreq}
                 setPWMSwitch={this.setPWMSwitch}
                 post_pwm={this.post_pwm}
-
               />
               <PWM
                 name="pwm3"
@@ -645,7 +739,6 @@ class App extends React.Component {
                 setPWMFreq={this.setPWMFreq}
                 setPWMSwitch={this.setPWMSwitch}
                 post_pwm={this.post_pwm}
-
               />
               <PWM
                 name="pwm4"
@@ -656,7 +749,6 @@ class App extends React.Component {
                 setPWMFreq={this.setPWMFreq}
                 setPWMSwitch={this.setPWMSwitch}
                 post_pwm={this.post_pwm}
-
               />
               <PWM
                 name="pwm5"
@@ -667,7 +759,6 @@ class App extends React.Component {
                 setPWMFreq={this.setPWMFreq}
                 setPWMSwitch={this.setPWMSwitch}
                 post_pwm={this.post_pwm}
-
               />
               <PWM
                 name="pwm6"
@@ -678,7 +769,6 @@ class App extends React.Component {
                 setPWMFreq={this.setPWMFreq}
                 setPWMSwitch={this.setPWMSwitch}
                 post_pwm={this.post_pwm}
-
               />
             </TabPanel>
             <TabPanel value={this.state.tab} index={1}>
@@ -712,15 +802,7 @@ class App extends React.Component {
               />
             </TabPanel>
             <TabPanel value={this.state.tab} index={2}>
-              <PWM
-                name="pwm1"
-                data={this.state.pwm.pwm1}
-                Title={"PWM1-Test"}
-                setPWMSwitch={this.setPWMSwitch}
-                setPWMDuty={this.setPWMDuty}
-                setPWMFreq={this.setPWMFreq}
-                setPWMSwitch={this.setPWMSwitch}
-              />
+              <CAN_Table data = {this.state.can_rows}></CAN_Table>
             </TabPanel>
           </Box>
         </body>
