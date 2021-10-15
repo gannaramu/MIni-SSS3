@@ -22,6 +22,7 @@ import Pot from "./Pot";
 import CAN_Table from "./CAN_Table";
 
 import { PWMD, Duty, Freq, SW, PotD, Wiper, Monitor, CANData } from "./data";
+import CAN_Gen_Table from "./CAN_Gen_Table";
 
 function TabPanel(props) {
   const { children, value, index, ...other } = props;
@@ -383,48 +384,47 @@ class App extends React.Component {
   setCAN_fromResponse(state) {
     ////console.log("input of setCAN from response", state);
     let items = this.state.can_rows;
-    if(state){
-    for (const [key, value] of Object.entries(state)) {
-      //   let item = { ...items[key] };
-      //   for (const [key2, value] of Object.entries(value)) {
-      // ////console.log(key);
-      let item = { ...items[key] };
-      if (!(key in items)) {
-        ////console.log("Here");
-        item = CANData(
-          value.ID,
-          value.count,
-          value.LEN,
-          value.DATA[0],
-          value.DATA[1],
-          value.DATA[2],
-          value.DATA[3],
-          value.DATA[4],
-          value.DATA[5],
-          value.DATA[6],
-          value.DATA[7]
-        );
-      }
-      else{
-        item.ID = value.ID;
-        item.Count = value.count;
-        item.LEN = value.LEN;
-        item.B0 = value.DATA[0];
-        item.B1 = value.DATA[1];
-        item.B2 = value.DATA[2];
-        item.B3 = value.DATA[3];
-        item.B4 = value.DATA[4];
-        item.B5 = value.DATA[5];
-        item.B6 = value.DATA[6];
-        item.B7 = value.DATA[7];
-      }
-      // item.ID = value.ID;
-      // ////console.log("item: ",item);
+    if (state) {
+      for (const [key, value] of Object.entries(state)) {
+        //   let item = { ...items[key] };
+        //   for (const [key2, value] of Object.entries(value)) {
+        // ////console.log(key);
+        let item = { ...items[key] };
+        if (!(key in items)) {
+          ////console.log("Here");
+          item = CANData(
+            value.ID,
+            value.count,
+            value.LEN,
+            value.DATA[0],
+            value.DATA[1],
+            value.DATA[2],
+            value.DATA[3],
+            value.DATA[4],
+            value.DATA[5],
+            value.DATA[6],
+            value.DATA[7]
+          );
+        } else {
+          item.ID = value.ID;
+          item.Count = value.count;
+          item.LEN = value.LEN;
+          item.B0 = value.DATA[0];
+          item.B1 = value.DATA[1];
+          item.B2 = value.DATA[2];
+          item.B3 = value.DATA[3];
+          item.B4 = value.DATA[4];
+          item.B5 = value.DATA[5];
+          item.B6 = value.DATA[6];
+          item.B7 = value.DATA[7];
+        }
+        // item.ID = value.ID;
+        // ////console.log("item: ",item);
 
-      //   }
-      items[key] = item;
+        //   }
+        items[key] = item;
+      }
     }
-  }
     // ////console.log("items: ", items);
     // this.setState({
     //   pots: items,
@@ -707,6 +707,7 @@ class App extends React.Component {
                 <Tab label="PWM" {...a11yProps(0)} />
                 <Tab label="Potentiometer" {...a11yProps(1)} />
                 <Tab label="CAN" {...a11yProps(2)} />
+                <Tab label="CAN Message Generator" {...a11yProps(3)} />
               </Tabs>
             </Box>
             <TabPanel value={this.state.tab} index={0}>
@@ -802,7 +803,10 @@ class App extends React.Component {
               />
             </TabPanel>
             <TabPanel value={this.state.tab} index={2}>
-              <CAN_Table data = {this.state.can_rows}></CAN_Table>
+              <CAN_Table data={this.state.can_rows}></CAN_Table>
+            </TabPanel>
+            <TabPanel value={this.state.tab} index={3}>
+              <CAN_Gen_Table></CAN_Gen_Table>
             </TabPanel>
           </Box>
         </body>
