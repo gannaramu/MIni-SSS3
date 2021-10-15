@@ -37,5 +37,11 @@ jobs:
       run: pio lib -g install 1
     - name: Run PlatformIO
       working-directory: ./Mini-SSS3-Firmware
-
       run: pio run -e teensy40
+    - name: Archive Build Artifacts
+      uses: actions/upload-artifact@v2
+      with:
+        name: build-hex-file
+        path: .pio/build/teensy40/firmware.hex
+
+
