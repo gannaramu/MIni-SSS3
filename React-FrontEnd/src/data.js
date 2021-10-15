@@ -8,3 +8,7 @@ export const SW = (value, meta) => { return { value: value, meta: meta } }
 
 export const Wiper = (value, error, helperText) => { return { value: value, error: error,helperText: helperText } }
 export const Monitor = (voltage,current) => { return { voltage: voltage,current:current } }
+
+export function CANData(ID, Count, LEN, B0, B1,B2,B3,B4,B5,B6,B7) {
+    return {ID, Count, LEN, B0, B1,B2,B3,B4,B5,B6,B7};
+  }
