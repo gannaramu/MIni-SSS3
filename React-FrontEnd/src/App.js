@@ -1,19 +1,13 @@
 // import {Component} from 'react';
 import * as React from "react";
-
-import ToggleButton from "react-toggle-button";
 import "./App.css";
-import { Switch, Button, TextField } from "@mui/material";
+import { Switch} from "@mui/material";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
-// import { styled } from "@mui/system";
 import { styled } from "@mui/material/styles";
 import CSULogo from "./CSU-Ram-357-617.svg";
 
 import PropTypes from "prop-types";
-import SwipeableViews from "react-swipeable-views";
-import { useTheme } from "@mui/material/styles";
-import AppBar from "@mui/material/AppBar";
 import Tabs from "@mui/material/Tabs";
 import Tab from "@mui/material/Tab";
 import Box from "@mui/material/Box";
@@ -21,7 +15,7 @@ import PWM from "./PWM";
 import Pot from "./Pot";
 import CAN_Table from "./CAN_Table";
 
-import { PWMD, Duty, Freq, SW, PotD, Wiper, Monitor, CANData } from "./data";
+import { PWMD, Duty, Freq, SW, PotD, Wiper, Monitor, CANData,CANGenData } from "./data";
 import CAN_Gen_Table from "./CAN_Gen_Table";
 
 function TabPanel(props) {
@@ -235,7 +229,8 @@ const pot4 = PotD(
 );
 
 const can1 = CANData("0xDEAD", 159, 8, 1, 2, 3, 4, 5, 6, 7, 8);
-
+// enable,ThreadName, num_messages,message_index, cycle_count,channel,tx_periodLEN, tx_delay,stop_after_count,extended, ID,DLC,B0, B1,B2,B3,B4,B5,B6,B7
+const can_gen_data = CANGenData(0,"Test Thread Name",1,0,123,0,100,100,123,1,"0xDEAD",8,1, 2, 3, 4, 5, 6, 7, 8);
 class App extends React.Component {
   constructor(props) {
     super(props);
@@ -287,6 +282,7 @@ class App extends React.Component {
         pot4: pot4,
       },
       can_rows: [],
+      can_gen:[],
     };
     this.handleChange = this.handleChange.bind(this);
     // this.setPWMDuty = this.setPWMDuty.bind(this);
@@ -360,6 +356,48 @@ class App extends React.Component {
     //console.log("items: ", items);
     this.setState({
       pots: items,
+    });
+  }
+
+  setCANGenState_fromResponse(state) {
+    console.log("input of setCANGenState from response", state);
+    let items = this.state.can_gen;
+    for (const [ThreadID, value] of Object.entries(state)) {
+      if (!(ThreadID in items)) {
+        // console.log(ThreadID + " not in items");
+        items[ThreadID]=can_gen_data;
+      }
+        let item = { ...items[ThreadID] };
+        // console.log(item);
+      for (const [key, value] of Object.entries(value)) {
+        // console.log(ThreadID, key,value);
+
+         if (!(key in item)) {
+          item[key] = {};
+        }
+        if(key=="DATA")
+        {
+          item["B0"] = value[0];
+          item["B1"] = value[1];
+          item["B2"] = value[2];
+          item["B3"] = value[3];
+          item["B4"] = value[4];
+          item["B5"] = value[5];
+          item["B6"] = value[6];
+          item["B7"] = value[7];
+        }
+        else{
+        item[key] = value;
+      }
+      }
+      item["ThreadID"] = ThreadID;
+      item["id"] = ThreadID
+      // console.log(item);
+      items[ThreadID] = item;
+    }
+    console.log("items: ", items);
+    this.setState({
+      can_gen: items,
     });
   }
 
@@ -611,13 +649,18 @@ class App extends React.Component {
         .then((response) => response.json())
         // .then((state) => //console.log(state)),
         .then((state) => this.setPotState_fromResponse(state)),
+
+      fetch("/cangen")
+        .then((response) => response.json())
+        // .then((state) => console.log(state)),
+        .then((state) => this.setCANGenState_fromResponse(state)),
     ]);
-    const interval = setInterval(() => {
-      this.read_voltage();
-    }, 1000);
-    const can_interval = setInterval(() => {
-      this.read_CAN();
-    }, 100);
+    // const interval = setInterval(() => {
+    //   this.read_voltage();
+    // }, 1000);
+    // const can_interval = setInterval(() => {
+    //   this.read_CAN();
+    // }, 100);
   }
 
   async handleStateChange(ledOn) {
@@ -806,7 +849,7 @@ class App extends React.Component {
               <CAN_Table data={this.state.can_rows}></CAN_Table>
             </TabPanel>
             <TabPanel value={this.state.tab} index={3}>
-              <CAN_Gen_Table></CAN_Gen_Table>
+              <CAN_Gen_Table data={this.state.can_gen}></CAN_Gen_Table>
             </TabPanel>
           </Box>
         </body>
