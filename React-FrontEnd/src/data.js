@@ -31,7 +31,7 @@ export function CANData(ID, Count, LEN, B0, B1, B2, B3, B4, B5, B6, B7) {
 
 export function CANGenData(
   ThreadID,
-  enable,
+  enabled,
   ThreadName,
   num_messages,
   message_index,
@@ -55,7 +55,7 @@ export function CANGenData(
 ) {
   return {
     ThreadID,
-    enable,
+    enabled,
     ThreadName,
     num_messages,
     message_index,

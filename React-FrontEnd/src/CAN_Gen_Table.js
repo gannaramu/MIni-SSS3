@@ -1,23 +1,41 @@
 import * as React from 'react';
-import { DataGrid } from '@mui/x-data-grid';
-import { useEffect } from "react";
+import { DataGrid, GridActionsCellItem } from '@mui/x-data-grid';
+import DeleteIcon from '@mui/icons-material/Delete';
+import SecurityIcon from '@mui/icons-material/Security';
+import FileCopyIcon from '@mui/icons-material/FileCopy';
+import { useEffect , useCallback} from "react";
+import Button from '@mui/material/Button';
+
 
 
 export default function CAN_Gen_Table(props) {
   useEffect(() => {
     console.log(props.data);
   });
+
+  const cellHandler = useCallback((params) => {
+    console.log("cellHandler Change Handler Inputs: ",params.id,params.field,params.props.value );
+    // props.setCANCell(params.id,params.field,params.props.value );
+  });
+
+
+  const upateCompleate = useCallback((id) => {
+    console.log("upateCompleate Inputs: ",id);
+    props.PostCANRow(id);
+  });
+
+
   return (
     <div style={{ height: 600 }}>
-      <DataGrid rows={props.data} columns={columns} />
+      <DataGrid rowHeight={25} editMode="row" rows={props.data} columns={columns} onEditCellPropsChange={cellHandler} onRowEditCommit={upateCompleate}/>
     </div>
   );
 }
 const columns = [
-  { field: 'ThreadID', headerName: 'Thread', width: 160, type: 'number', editable: true  },
-  { field: 'enable', headerName: 'Send',  width: 120,type: 'number', editable: true },
+  { field: 'ThreadID', headerName: 'Thread', width: 100, type: 'number', editable: false  },
+  { field: 'enabled', headerName: 'enabled',  width: 100,type: 'boolean', editable: true },
   { field: 'ThreadName', headerName: 'Thread Label',  width: 240, editable: true },
-  { field: 'num_messages', headerName: 'Count', width: 120, type: 'number', editable: true },
+  { field: 'num_messages', headerName: 'num_messages', width: 120, type: 'number', editable: true },
   { field: 'message_index', headerName: 'Index',  width: 120, type: 'number', editable: true },
   { field: 'transmit_number', headerName: 'TX Count', width: 120, type: 'number', editable: true },
   { field: 'cycle_count', headerName: 'cycle_count', width: 120, type: 'number', editable: true },
@@ -40,7 +58,30 @@ const columns = [
   { field: 'B5', headerName: 'B5', type: 'number', editable: true },
   { field: 'B6', headerName: 'B6', type: 'number', editable: true },
   { field: 'B7', headerName: 'B7', type: 'number', editable: true },
-
+  {
+    field: 'actions',
+    type: 'actions',
+    width: 80,
+    getActions: (params) => [
+      <GridActionsCellItem
+        icon={<DeleteIcon />}
+        label="Delete"
+        // onClick={deleteUser(params.id)}
+      />,
+      <GridActionsCellItem
+        icon={<SecurityIcon />}
+        label="Toggle Admin"
+        // onClick={toggleAdmin(params.id)}
+        showInMenu
+      />,
+      <GridActionsCellItem
+        icon={<FileCopyIcon />}
+        label="Duplicate User"
+        // onClick={duplicateUser(params.id)}
+        showInMenu
+      />,
+    ],
+  },
 //   { 
 //     field: 'dateCreated',
 //     headerName: 'Date Created',

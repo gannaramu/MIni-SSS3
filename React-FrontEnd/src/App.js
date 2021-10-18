@@ -1,7 +1,7 @@
 // import {Component} from 'react';
 import * as React from "react";
 import "./App.css";
-import { Switch} from "@mui/material";
+import { Switch } from "@mui/material";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import { styled } from "@mui/material/styles";
@@ -15,8 +15,21 @@ import PWM from "./PWM";
 import Pot from "./Pot";
 import CAN_Table from "./CAN_Table";
 
-import { PWMD, Duty, Freq, SW, PotD, Wiper, Monitor, CANData,CANGenData } from "./data";
+import {
+  PWMD,
+  Duty,
+  Freq,
+  SW,
+  PotD,
+  Wiper,
+  Monitor,
+  CANData,
+  CANGenData,
+} from "./data";
 import CAN_Gen_Table from "./CAN_Gen_Table";
+import { v4 as uuidv4 } from "uuid";
+const UUID = require('uuid-int');
+const generator = UUID(0);
 
 function TabPanel(props) {
   const { children, value, index, ...other } = props;
@@ -230,7 +243,29 @@ const pot4 = PotD(
 
 const can1 = CANData("0xDEAD", 159, 8, 1, 2, 3, 4, 5, 6, 7, 8);
 // enable,ThreadName, num_messages,message_index, cycle_count,channel,tx_periodLEN, tx_delay,stop_after_count,extended, ID,DLC,B0, B1,B2,B3,B4,B5,B6,B7
-const can_gen_data = CANGenData(0,"Test Thread Name",1,0,123,0,100,100,123,1,"0xDEAD",8,1, 2, 3, 4, 5, 6, 7, 8);
+const can_gen_data = CANGenData(
+  0,
+  "Test Thread Name",
+  1,
+  0,
+  123,
+  0,
+  100,
+  100,
+  123,
+  1,
+  "0xDEAD",
+  8,
+  1,
+  2,
+  3,
+  4,
+  5,
+  6,
+  7,
+  8
+);
+
 class App extends React.Component {
   constructor(props) {
     super(props);
@@ -282,7 +317,7 @@ class App extends React.Component {
         pot4: pot4,
       },
       can_rows: [],
-      can_gen:[],
+      can_gen: [],
     };
     this.handleChange = this.handleChange.bind(this);
     // this.setPWMDuty = this.setPWMDuty.bind(this);
@@ -292,6 +327,8 @@ class App extends React.Component {
     this.post_pwm = this.post_pwm.bind(this);
     this.PostPots = this.PostPots.bind(this);
     this.setPotWiper = this.setPotWiper.bind(this);
+    this.setCANCell = this.setCANCell.bind(this);
+    this.PostCANRow = this.PostCANRow.bind(this);
   }
 
   setLedState(state) {
@@ -364,19 +401,18 @@ class App extends React.Component {
     let items = this.state.can_gen;
     for (const [ThreadID, value] of Object.entries(state)) {
       if (!(ThreadID in items)) {
-        // console.log(ThreadID + " not in items");
-        items[ThreadID]=can_gen_data;
+        console.log(ThreadID + " not in items");
+        items[ThreadID] = can_gen_data;
       }
-        let item = { ...items[ThreadID] };
-        // console.log(item);
+      let item = { ...items[ThreadID] };
+      // console.log(item);
       for (const [key, value] of Object.entries(value)) {
         // console.log(ThreadID, key,value);
 
-         if (!(key in item)) {
+        if (!(key in item)) {
           item[key] = {};
         }
-        if(key=="DATA")
-        {
+        if (key == "DATA") {
           item["B0"] = value[0];
           item["B1"] = value[1];
           item["B2"] = value[2];
@@ -385,13 +421,13 @@ class App extends React.Component {
           item["B5"] = value[5];
           item["B6"] = value[6];
           item["B7"] = value[7];
+        } else {
+          item[key] = value;
         }
-        else{
-        item[key] = value;
-      }
       }
       item["ThreadID"] = ThreadID;
-      item["id"] = ThreadID
+      // item["id"] = generator.uuid();
+      item["id"] = parseInt(ThreadID);
       // console.log(item);
       items[ThreadID] = item;
     }
@@ -399,6 +435,59 @@ class App extends React.Component {
     this.setState({
       can_gen: items,
     });
+  }
+
+  setCANCell(id, field, value) {
+    // console.log("setCANCell: ",id,field,value);
+    let items = [...this.state.can_gen];
+    let item = { ...items[id] };
+    item[field] = value;
+    items[id] = item;
+    // console.log(items);
+    this.setState({
+      can_gen: items,
+    });
+  }
+
+  async PostCANRow(id) {
+    console.log("PostCANRow: ", id);
+    let items = [...this.state.can_gen];
+    let item = { ...items[id] };
+
+    // console.log(items);
+    item["DATA"] = [];
+    // for(int i=0; i<item["DLC"]; i++) {
+
+    // }
+    item["DATA"].push(item["B0"]);
+    item["DATA"].push(item["B1"]);
+    item["DATA"].push(item["B2"]);
+    item["DATA"].push(item["B3"]);
+    item["DATA"].push(item["B4"]);
+    item["DATA"].push(item["B5"]);
+    item["DATA"].push(item["B6"]);
+    item["DATA"].push(item["B7"]);
+
+    //console.log("input to post_pwm: ", this.state.pwm);
+
+    var myHeaders = new Headers();
+    myHeaders.append("Content-Type", "application/json");
+    var body = item;
+    var raw = JSON.stringify(body);
+    console.log(raw);
+
+    var requestOptions = {
+      method: "POST",
+      headers: myHeaders,
+      body: raw,
+      redirect: "follow",
+    };
+
+    let response = await fetch("/cangen", requestOptions);
+    let state = await response.json();
+    //console.log(state);
+    this.setCANGenState_fromResponse(state);
+    // this.setState({
   }
 
   setPotMonitor_fromResponse(state) {
@@ -849,7 +938,11 @@ class App extends React.Component {
               <CAN_Table data={this.state.can_rows}></CAN_Table>
             </TabPanel>
             <TabPanel value={this.state.tab} index={3}>
-              <CAN_Gen_Table data={this.state.can_gen}></CAN_Gen_Table>
+              <CAN_Gen_Table
+                data={this.state.can_gen}
+                setCANCell={this.setCANCell}
+                PostCANRow={this.PostCANRow}
+              ></CAN_Gen_Table>
             </TabPanel>
           </Box>
         </body>
