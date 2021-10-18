@@ -7,7 +7,9 @@
 #include "Mini_SSS3_board_defs_rev_2.h"
 #include <Microchip_PAC193x.h>
 #include <FlexCAN_T4.h>
+#include "CAN_Message_Threads.h"
 
+// extern void reloadCAN();
 // Enter a MAC address for your controller below.
 // Newer Ethernet shields have a MAC address printed on a sticker on the shield
 byte mac[] = {
@@ -19,11 +21,17 @@ uint8_t buff[2048];
 char buff_c[2048];
 DynamicJsonDocument doc(2048);
 Microchip_PAC193x PAC;
-FlexCAN_T4<CAN1, RX_SIZE_256, TX_SIZE_16> can1;
-FlexCAN_T4<CAN2, RX_SIZE_256, TX_SIZE_16> can2;
+
 CAN_message_t msg;
 StaticJsonDocument<2048> can_dict;
-bool DEBUG = true;
+// bool DEBUG = true;
+
+// CAN Threads
+
+// extern ThreadController can_thread_controller;
+
+// extern CanThread* can_messages;
+
 bool parse_response(uint8_t *buffer)
 {
   // Serial.print((char *)buffer);
@@ -35,8 +43,10 @@ bool parse_response(uint8_t *buffer)
 
   if (error)
   {
-    if (DEBUG) Serial.print(F("deserializeJson() failed: "));
-    if (DEBUG) Serial.println(error.f_str());
+    if (DEBUG)
+      Serial.print(F("deserializeJson() failed: "));
+    if (DEBUG)
+      Serial.println(error.f_str());
     return false;
   }
 
@@ -45,8 +55,10 @@ bool parse_response(uint8_t *buffer)
 
 void read_keySw(Request &req, Response &res)
 {
-  if (DEBUG) Serial.print("Got GET Request for LED returned: ");
-  if (DEBUG) Serial.println(ignitionCtlState);
+  if (DEBUG)
+    Serial.print("Got GET Request for LED returned: ");
+  if (DEBUG)
+    Serial.println(ignitionCtlState);
   res.print(ignitionCtlState);
 }
 
@@ -54,7 +66,8 @@ void update_keySw(Request &req, Response &res)
 {
 
   // JsonObject& config = jb.parseObject( &req);
-  if (DEBUG) Serial.print("Got POST Request for LED: ");
+  if (DEBUG)
+    Serial.print("Got POST Request for LED: ");
   req.body(buff, sizeof(buff));
   if (!parse_response(buff))
   {
@@ -82,7 +95,8 @@ void read_potentiometers(Request &req, Response &res)
 {
   DynamicJsonDocument response(2048);
   char json[2048];
-  if (DEBUG) Serial.print("Got GET Request for Potentiometers, returned: ");
+  if (DEBUG)
+    Serial.print("Got GET Request for Potentiometers, returned: ");
   response["pot1"]["wiper"]["value"] = SPIpotWiperSettings[0];
   response["pot1"]["sw"]["value"] = 0;
   response["pot1"]["sw"]["meta"] = "TBD";
@@ -101,7 +115,8 @@ void read_potentiometers(Request &req, Response &res)
 
   // serializeJson(response, json);
   serializeJsonPretty(response, json);
-  if (DEBUG) Serial.println(json);
+  if (DEBUG)
+    Serial.println(json);
   res.print(json);
 }
 
@@ -118,7 +133,8 @@ void update_potentiometers(Request &req, Response &res)
 {
 
   // JsonObject& config = jb.parseObject( &req);
-  if (DEBUG) Serial.print("Got POST Request for Potentiometers: ");
+  if (DEBUG)
+    Serial.print("Got POST Request for Potentiometers: ");
   req.body(buff, sizeof(buff));
   if (!parse_response(buff))
   {
@@ -152,10 +168,12 @@ void update_potentiometers(Request &req, Response &res)
 
 void read_pac1934(Request &req, Response &res)
 {
-  if (DEBUG) Serial.print("Got GET Request for PAC1934: ");
+  if (DEBUG)
+    Serial.print("Got GET Request for PAC1934: ");
   DynamicJsonDocument response(2048);
   char json[2048];
-  if (DEBUG) Serial.print("Got GET Request for Potentiometers, returned: ");
+  if (DEBUG)
+    Serial.print("Got GET Request for Potentiometers, returned: ");
   PAC.UpdateVoltage();
   float temp = PAC.Voltage1;
   response["pot1"]["voltage"] = PAC.Voltage1 / 1000;
@@ -168,19 +186,20 @@ void read_pac1934(Request &req, Response &res)
   response["pot4"]["current"] = -1;
 
   serializeJsonPretty(response, json);
-  if (DEBUG) Serial.println(json);
+  if (DEBUG)
+    Serial.println(json);
   res.print(json);
 }
 
 void read_CAN(Request &req, Response &res)
 {
-  if (DEBUG) Serial.print("Got GET Request for Read CAN: ");
+  if (DEBUG)
+    Serial.print("Got GET Request for Read CAN: ");
   char json[2048];
   serializeJsonPretty(can_dict, json);
   // if (DEBUG) Serial.println(json);
   res.print(json);
 }
-
 
 void setup()
 {
@@ -189,10 +208,10 @@ void setup()
 
   SPI.begin();
   Ethernet.init(14); // Most Arduino shields
-  can1.begin();
-  can1.setBaudRate(250000);
-  can2.begin();
-  can2.setBaudRate(250000);
+  Can1.begin();
+  Can1.setBaudRate(250000);
+  Can2.begin();
+  Can2.setBaudRate(250000);
   // Open serial communications and wait for port to open:
   Serial.begin(9600);
   while (!Serial)
@@ -205,7 +224,8 @@ void setup()
   // Check for Ethernet hardware present
   if (Ethernet.hardwareStatus() == EthernetNoHardware)
   {
-    if (DEBUG) Serial.println("Ethernet shield was not found.  Sorry, can't run without hardware. :(");
+    if (DEBUG)
+      Serial.println("Ethernet shield was not found.  Sorry, can't run without hardware. :(");
     while (true)
     {
       delay(1); // do nothing, no point running without Ethernet hardware
@@ -213,11 +233,14 @@ void setup()
   }
   if (Ethernet.linkStatus() == LinkOFF)
   {
-    if (DEBUG) Serial.println("Ethernet cable is not connected.");
+    if (DEBUG)
+      Serial.println("Ethernet cable is not connected.");
   }
   // print your local IP address:
-  if (DEBUG) Serial.print("My IP address asdasd: ");
-  if (DEBUG) Serial.println(Ethernet.localIP());
+  if (DEBUG)
+    Serial.print("My IP address asdasd: ");
+  if (DEBUG)
+    Serial.println(Ethernet.localIP());
   app.get("/led", &read_keySw);
   app.put("/led", &update_keySw);
   app.post("/led", &update_keySw);
@@ -225,12 +248,19 @@ void setup()
   app.post("/pots", &update_potentiometers);
   app.get("/voltage", &read_pac1934);
   app.get("/can", &read_CAN);
+  app.get("/cangen", &read_CAN_Gen);
+  app.post("/cangen", &update_CAN_Gen);
   app.route(staticFiles());
   server.begin();
+  ignitionCtlState = true;
+  reloadCAN();
+  delay(100);
+  stopCAN();
 }
 
 void loop()
 {
+
   EthernetClient client = server.available();
   // SSLClient client(base_client, TAs, (size_t)TAs_NUM, rand_pin);
 
@@ -244,7 +274,7 @@ void loop()
   {
     app.process(&client);
   }
-  if (can1.read(msg))
+  if (Can1.read(msg))
   {
     digitalWrite(greenLEDpin, HIGH);
     // Serial.print("CAN1 ");
@@ -264,7 +294,7 @@ void loop()
         char CAN_data[4];
         // itoa( msg.buf[i], CAN_data, 16);
         sprintf(CAN_data, "%02X", msg.buf[i]);
-        can_dict[CAN_ID]["DATA"][i] = CAN_data; 
+        can_dict[CAN_ID]["DATA"][i] = CAN_data;
       }
     }
     else

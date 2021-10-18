@@ -41,7 +41,7 @@
 #define linRXpin 9
 
 String make = "SYNER";
-String model = "SSS2";
+String model = "SSS3";
 String revision = "05a";
 String serial_number = "XXXX";
 String componentID = make + "*" + model + "-" + revision + "*" + serial_number + "*UNIVERSAL";
