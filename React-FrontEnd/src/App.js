@@ -245,6 +245,7 @@ const can1 = CANData("0xDEAD", 159, 8, 1, 2, 3, 4, 5, 6, 7, 8);
 // enable,ThreadName, num_messages,message_index, cycle_count,channel,tx_periodLEN, tx_delay,stop_after_count,extended, ID,DLC,B0, B1,B2,B3,B4,B5,B6,B7
 const can_gen_data = CANGenData(
   0,
+  0,
   "Test Thread Name",
   1,
   0,
@@ -317,7 +318,7 @@ class App extends React.Component {
         pot4: pot4,
       },
       can_rows: [],
-      can_gen: [],
+      can_gen: {},
     };
     this.handleChange = this.handleChange.bind(this);
     // this.setPWMDuty = this.setPWMDuty.bind(this);
@@ -349,6 +350,7 @@ class App extends React.Component {
     });
   }
 
+  // PWM
   setPWMState_fromResponse(state) {
     //console.log("input of setPWMstatea from response", state);
     let items = this.state.pwm;
@@ -375,6 +377,131 @@ class App extends React.Component {
     });
   }
 
+  setPWMDuty(name, duty) {
+    //console.log("Input of setPWMDuty", name, duty);
+    // //console.log("State:", this.state.pwm);
+    let items = this.state.pwm;
+    //console.log("Items:", items);
+    let item = { ...items[name] };
+    //console.log("Item:", item);
+    item.duty.value = duty;
+    if (duty > 4096 || duty < 0) {
+      item.duty.error = true;
+      item.duty.helperText = "value should be between 0-4096";
+    } else {
+      item.duty.error = false;
+      item.duty.helperText = "";
+      items[name] = item;
+    }
+    this.setState({
+      pwm: items,
+    });
+  }
+
+  setPWMFreq(name, freq) {
+    //console.log("Input of setPWMState", name, freq);
+    //console.log("State:", this.state.pwm);
+    let items = this.state.pwm;
+    //console.log("Items:", items);
+    let item = { ...items[name] };
+    //console.log("Item:", item);
+    item.freq.value = freq;
+    if (freq > 4096 || freq < 0) {
+      item.freq.error = true;
+      item.freq.helperText = "value should be between 0-4096";
+      items[name] = item;
+    } else {
+      item.freq.error = false;
+      item.freq.helperText = "";
+      items[name] = item;
+    }
+    this.setState({
+      pwm: items,
+    });
+  }
+
+  setPWMSwitch(name, value) {
+    //console.log("Input of setPWMSwitch", name, value);
+    let items = this.state.pwm;
+    //console.log("Items:", items);
+    let item = { ...items[name] };
+    //console.log("Item:", item);
+    item.sw.value = value;
+    items[name] = item;
+
+    this.setState({
+      pwm: items,
+    });
+    this.post_pwm();
+  }
+
+  DCChangeHandler(event) {
+    //console.log("DC Handler Inputs: ", event.target.name, event.target.value);
+    let value = event.target.value;
+    let name = event.target.name;
+
+    this.setPWMDuty(name, value);
+  }
+
+  SwitchHandler(event) {
+    // console.log(
+    //   "SwitchHandler Inputs: ",
+    //   event.target.name,
+    //   event.target.checked
+    // );
+    let value = event.target.checked;
+    let name = event.target.name;
+
+    this.setPWMSwitch(name, value);
+  }
+
+  FreqChangeHandler(event) {
+    //console.log(
+    //   "Freq Change Handler Inputs: ",
+    //   event.target.name,
+    //   event.target.value
+    // );
+    let value = event.target.value;
+    let name = event.target.name;
+
+    if (event.target.name === "pwm1" || event.target.name === "pwm2") {
+      this.setPWMFreq("pwm1", value);
+      this.setPWMFreq("pwm2", value);
+    } else if (event.target.name === "pwm4" || event.target.name === "pwm5") {
+      this.setPWMFreq("pwm4", value);
+      this.setPWMFreq("pwm5", value);
+    } else {
+      this.setPWMFreq(name, value);
+    }
+  }
+
+  
+  async post_pwm() {
+    //console.log("input to post_pwm: ", this.state.pwm);
+
+    var myHeaders = new Headers();
+    myHeaders.append("Content-Type", "application/json");
+    var body = this.state.pwm;
+    var raw = JSON.stringify(body);
+
+    var requestOptions = {
+      method: "POST",
+      headers: myHeaders,
+      body: raw,
+      redirect: "follow",
+    };
+
+    let response = await fetch("/pwm", requestOptions);
+    let state = await response.json();
+    //console.log(state);
+    this.setPWMState_fromResponse(state);
+    // this.setState({
+    //   ledOn: state !== "0",
+    // });
+    //console.log(this.state);
+  }
+
+  // Pots 
   setPotState_fromResponse(state) {
     //console.log("input of setPotState from response", state);
     let items = this.state.pots;
@@ -396,6 +523,69 @@ class App extends React.Component {
     });
   }
 
+  setPotWiper(name, value) {
+    //console.log("Input of setPotWiper", name, value);
+    // //console.log("State:", this.state.pwm);
+    let items = this.state.pots;
+    //console.log("Items:", items);
+    let item = { ...items[name] };
+    //console.log("Item:", item);
+    item.wiper.value = value;
+    if (value > 256 || value < 0) {
+      item.wiper.error = true;
+      item.wiper.helperText = "value should be between 0-256";
+    } else {
+      item.wiper.error = false;
+      item.wiper.helperText = "";
+      items[name] = item;
+    }
+    this.setState({
+      pots: items,
+    });
+  }
+  async PostPots(name) {
+    //console.log("input to post_pot: ", name);
+
+    var myHeaders = new Headers();
+    myHeaders.append("Content-Type", "application/json");
+    var pwm_body = this.state.pots[name];
+
+    var obj = {};
+    obj[name] = pwm_body;
+    var requestOptions = {
+      method: "POST",
+      headers: myHeaders,
+      body: JSON.stringify(obj),
+      redirect: "follow",
+    };
+    // //console.log(requestOptions)
+    let response = await fetch("/pots", requestOptions);
+    let state = await response.json();
+    //console.log(state);
+    this.setPWMState_fromResponse(state);
+
+    // //console.log(this.state);
+  }
+
+  setPotMonitor_fromResponse(state) {
+    // //console.log("input of setPotMonitor from response", state);
+    let items = this.state.pots;
+    for (const [key, value] of Object.entries(state)) {
+      let item = { ...items[key] };
+      for (const [key2, value] of Object.entries(value)) {
+        // //console.log(key, key2,value);
+        // //console.log(item);
+        item["monitor"][key2] = value;
+      }
+      items[key] = item;
+    }
+    // //console.log("items: ", items);
+    this.setState({
+      pots: items,
+    });
+  }
+
+  // CAN Gen
   setCANGenState_fromResponse(state) {
     console.log("input of setCANGenState from response", state);
     let items = this.state.can_gen;
@@ -405,6 +595,7 @@ class App extends React.Component {
         items[ThreadID] = can_gen_data;
       }
       let item = { ...items[ThreadID] };
+      // let item = {};
       // console.log(item);
       for (const [key, value] of Object.entries(value)) {
         // console.log(ThreadID, key,value);
@@ -425,10 +616,11 @@ class App extends React.Component {
           item[key] = value;
         }
       }
-      item["ThreadID"] = ThreadID;
+      // item["ThreadID"] = ThreadID;
       // item["id"] = generator.uuid();
       item["id"] = parseInt(ThreadID);
       // console.log(item);
+      // console.log("Index of : ", ThreadID,items.indexOf(item,0));
       items[ThreadID] = item;
     }
     console.log("items: ", items);
@@ -490,23 +682,7 @@ class App extends React.Component {
     // this.setState({
   }
 
-  setPotMonitor_fromResponse(state) {
-    // //console.log("input of setPotMonitor from response", state);
-    let items = this.state.pots;
-    for (const [key, value] of Object.entries(state)) {
-      let item = { ...items[key] };
-      for (const [key2, value] of Object.entries(value)) {
-        // //console.log(key, key2,value);
-        // //console.log(item);
-        item["monitor"][key2] = value;
-      }
-      items[key] = item;
-    }
-    // //console.log("items: ", items);
-    this.setState({
-      pots: items,
-    });
-  }
+  // CAN Monitor
 
   setCAN_fromResponse(state) {
     ////console.log("input of setCAN from response", state);
@@ -558,172 +734,8 @@ class App extends React.Component {
     // });
   }
 
-  setPWMDuty(name, duty) {
-    //console.log("Input of setPWMDuty", name, duty);
-    // //console.log("State:", this.state.pwm);
-    let items = this.state.pwm;
-    //console.log("Items:", items);
-    let item = { ...items[name] };
-    //console.log("Item:", item);
-    item.duty.value = duty;
-    if (duty > 4096 || duty < 0) {
-      item.duty.error = true;
-      item.duty.helperText = "value should be between 0-4096";
-    } else {
-      item.duty.error = false;
-      item.duty.helperText = "";
-      items[name] = item;
-    }
-    this.setState({
-      pwm: items,
-    });
-  }
 
-  setPWMSwitch(name, value) {
-    //console.log("Input of setPWMSwitch", name, value);
-    let items = this.state.pwm;
-    //console.log("Items:", items);
-    let item = { ...items[name] };
-    //console.log("Item:", item);
-    item.sw.value = value;
-    items[name] = item;
-
-    this.setState({
-      pwm: items,
-    });
-    this.post_pwm();
-  }
-
-  async post_pwm() {
-    //console.log("input to post_pwm: ", this.state.pwm);
-
-    var myHeaders = new Headers();
-    myHeaders.append("Content-Type", "application/json");
-    var body = this.state.pwm;
-    var raw = JSON.stringify(body);
-
-    var requestOptions = {
-      method: "POST",
-      headers: myHeaders,
-      body: raw,
-      redirect: "follow",
-    };
-
-    let response = await fetch("/pwm", requestOptions);
-    let state = await response.json();
-    //console.log(state);
-    this.setPWMState_fromResponse(state);
-    // this.setState({
-    //   ledOn: state !== "0",
-    // });
-    //console.log(this.state);
-  }
-
-  async PostPots(name) {
-    //console.log("input to post_pot: ", name);
-
-    var myHeaders = new Headers();
-    myHeaders.append("Content-Type", "application/json");
-    var pwm_body = this.state.pots[name];
-
-    var obj = {};
-    obj[name] = pwm_body;
-    var requestOptions = {
-      method: "POST",
-      headers: myHeaders,
-      body: JSON.stringify(obj),
-      redirect: "follow",
-    };
-    // //console.log(requestOptions)
-    let response = await fetch("/pots", requestOptions);
-    let state = await response.json();
-    //console.log(state);
-    this.setPWMState_fromResponse(state);
-
-    // //console.log(this.state);
-  }
-  setPWMFreq(name, freq) {
-    //console.log("Input of setPWMState", name, freq);
-    //console.log("State:", this.state.pwm);
-    let items = this.state.pwm;
-    //console.log("Items:", items);
-    let item = { ...items[name] };
-    //console.log("Item:", item);
-    item.freq.value = freq;
-    if (freq > 4096 || freq < 0) {
-      item.freq.error = true;
-      item.freq.helperText = "value should be between 0-4096";
-      items[name] = item;
-    } else {
-      item.freq.error = false;
-      item.freq.helperText = "";
-      items[name] = item;
-    }
-    this.setState({
-      pwm: items,
-    });
-  }
-
-  setPotWiper(name, value) {
-    //console.log("Input of setPotWiper", name, value);
-    // //console.log("State:", this.state.pwm);
-    let items = this.state.pots;
-    //console.log("Items:", items);
-    let item = { ...items[name] };
-    //console.log("Item:", item);
-    item.wiper.value = value;
-    if (value > 256 || value < 0) {
-      item.wiper.error = true;
-      item.wiper.helperText = "value should be between 0-256";
-    } else {
-      item.wiper.error = false;
-      item.wiper.helperText = "";
-      items[name] = item;
-    }
-    this.setState({
-      pots: items,
-    });
-  }
-
-  DCChangeHandler(event) {
-    //console.log("DC Handler Inputs: ", event.target.name, event.target.value);
-    let value = event.target.value;
-    let name = event.target.name;
-
-    this.setPWMDuty(name, value);
-  }
-
-  SwitchHandler(event) {
-    // console.log(
-    //   "SwitchHandler Inputs: ",
-    //   event.target.name,
-    //   event.target.checked
-    // );
-    let value = event.target.checked;
-    let name = event.target.name;
-
-    this.setPWMSwitch(name, value);
-  }
-
-  FreqChangeHandler(event) {
-    //console.log(
-    //   "Freq Change Handler Inputs: ",
-    //   event.target.name,
-    //   event.target.value
-    // );
-    let value = event.target.value;
-    let name = event.target.name;
-
-    if (event.target.name === "pwm1" || event.target.name === "pwm2") {
-      this.setPWMFreq("pwm1", value);
-      this.setPWMFreq("pwm2", value);
-    } else if (event.target.name === "pwm4" || event.target.name === "pwm5") {
-      this.setPWMFreq("pwm4", value);
-      this.setPWMFreq("pwm5", value);
-    } else {
-      this.setPWMFreq(name, value);
-    }
-  }
+ 
 
   componentDidMount() {
     Promise.all([
@@ -744,12 +756,18 @@ class App extends React.Component {
         // .then((state) => console.log(state)),
         .then((state) => this.setCANGenState_fromResponse(state)),
     ]);
-    // const interval = setInterval(() => {
-    //   this.read_voltage();
-    // }, 1000);
-    // const can_interval = setInterval(() => {
-    //   this.read_CAN();
-    // }, 100);
+    const interval = setInterval(() => {
+      this.read_voltage();
+    }, 1000);
+    const can_interval = setInterval(() => {
+      this.read_CAN();
+    }, 100);
+    const can_gen_interval = setInterval(() => {
+      this.read_CAN_Gen();
+    }, 1000);
+
+
+    
   }
 
   async handleStateChange(ledOn) {
@@ -794,6 +812,12 @@ class App extends React.Component {
     fetch("/can")
       .then((response) => response.json())
       .then((state) => this.setCAN_fromResponse(state));
+  }
+
+  async read_CAN_Gen() {
+    fetch("/cangen")
+      .then((response) => response.json())
+      .then((state) => this.setCANGenState_fromResponse(state));
   }
 
   render() {
