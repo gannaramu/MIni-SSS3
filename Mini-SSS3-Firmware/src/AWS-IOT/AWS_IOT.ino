@@ -26,24 +26,11 @@
 #include <ArduinoMqttClient.h>
 #include <TimeLib.h>
 #include "arduino_secrets.h"
-
+#include <Ethernet.h>
+#include <SPI.h>
 time_t RTCTime;
 #define ARDUINO_ETHERNET_SHIELD
 #define BOARD_HAS_ECCX08
-#include <Arduino_ConnectionHandler.h>
-#define DEBUG 1
-#if defined(BOARD_HAS_WIFI)
-WiFiConnectionHandler conMan(SECRET_SSID, SECRET_PASS);
-#elif defined(BOARD_HAS_GSM)
-GSMConnectionHandler conMan(SECRET_APN, SECRET_PIN, SECRET_GSM_USER, SECRET_GSM_PASS);
-#elif defined(BOARD_HAS_NB)
-NBConnectionHandler conMan(SECRET_PIN);
-#elif defined(BOARD_HAS_LORA)
-LoRaConnectionHandler conMan(SECRET_APP_EUI, SECRET_APP_KEY);
-#elif defined(BOARD_HAS_ETHERNET)
-
-// EthernetConnectionHandler conMan(mac);
-#endif
 
 EthernetClient client;
 BearSSLClient sslClient(client); // Used for SSL/TLS connection, integrates with ECC508
@@ -52,16 +39,6 @@ char server[] = "google.com"; // name address for Google (using DNS)
 const char broker[] = SECRET_BROKER;
 const char *certificate = SECRET_CERTIFICATE;
 unsigned long lastMillis = 0;
-
-// #include <sys/time.h>
-
-// int _gettimeofday( struct timeval *tv, void *tzvp )
-// {
-//     uint64_t t =  Teensy3Clock.get();  // get uptime in nanoseconds
-//     tv->tv_sec = t / 1000000000;  // convert to seconds
-//     tv->tv_usec = ( t % 1000000000 ) / 1000;  // get remaining microseconds
-//     return 0;  // return non-zero for error
-// } // end _gettimeofday()
 
 extern "C"
 {
@@ -176,9 +153,9 @@ void setup()
     Debug.print(DBG_DEBUG, "Ethernet cable is not connected.");
   }
   // print your local IP address:
-  Serial.printf("MAC: %02x:%02x:%02x:%02x:%02x:%02x\n", mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
+  Debug.print(DBG_INFO,"MAC: %02x:%02x:%02x:%02x:%02x:%02x\n", mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
   Serial.println();
-  Serial.print("My IP address: ");
+  Debug.print(DBG_INFO,"My IP address: ");
   Serial.println(Ethernet.localIP());
   // Debug.print(DBG_INFO, "DEBUG IP address: %s", String(Ethernet.localIP()));
   //  Debug.print(DBG_ERROR ,"%sString(Ethernet.localIP()));
@@ -193,29 +170,6 @@ void setup()
   ArduinoBearSSL.onGetTime(getTime);
   sslClient.setEccSlot(0, certificate);
   mqttClient.onMessage(onMessageReceived);
-
-  // Debug.print(DBG_INFO, "\nStarting connection to server...");
-  // // if you get a connection, report back via serial:
-  // if (sslClient.connect(server, 443)) {
-  //   Debug.print(DBG_INFO, "connected to server");
-  //   // Make a HTTP request:
-  //   sslClient.println("GET /search?q=arduino HTTP/1.1");
-  //   sslClient.println("Host: www.google.com");
-  //   sslClient.println("Connection: close");
-  //   sslClient.println();
-  // }
-  // byte server[] = {64, 233, 187, 99}; // Google
-
-  // if (client.connect(server, 80))
-  // {
-  //   Serial.println("connected");
-  //   client.println("GET /search?q=arduino HTTP/1.0");
-  //   client.println();
-  // }
-  // else
-  // {
-  //   Serial.println("connection failed");
-  // }
 }
 void loop()
 {
@@ -228,20 +182,6 @@ void loop()
    * object.
    */
 
-  // if (client.available())
-  // {
-  //   char c = client.read();
-  //   Serial.print(c);
-  // }
-
-  // if (!client.connected())
-  // {
-  //   Serial.println();
-  //   Serial.println("disconnecting.");
-  //   client.stop();
-  //   for (;;)
-  //     ;
-  // }
 
   if (!mqttClient.connected()) {
     // MQTT client is disconnected, connect
@@ -261,17 +201,17 @@ void loop()
 
 void onNetworkConnect()
 {
-  Serial.println(">>>> CONNECTED to network");
+  Debug.print(DBG_INFO,">>>> CONNECTED to network");
   Serial.print("My IP address: ");
   Serial.println(Ethernet.localIP());
 }
 
 void onNetworkDisconnect()
 {
-  Serial.println(">>>> DISCONNECTED from network");
+  Debug.print(DBG_WARNING,">>>> DISCONNECTED from network");
 }
 
 void onNetworkError()
 {
-  Serial.println(">>>> ERROR");
+  Debug.print(DBG_ERROR,">>>> ERROR");
 }

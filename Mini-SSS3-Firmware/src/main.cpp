@@ -1,8 +1,8 @@
 #include <Arduino.h>
 #include <SPI.h>
 #include <Ethernet.h>
-#include "aWOT.h"
-#include "StaticFiles.h"
+#include <aWOT.h>
+#include <StaticFiles.h>
 #include <ArduinoJson.h>
 #include "Mini_SSS3_board_defs_rev_2.h"
 #include <Microchip_PAC193x.h>
@@ -43,6 +43,7 @@ bool parse_response(uint8_t *buffer)
 
   if (error)
   {
+    // #TODO: implement printf_debug
     if (DEBUG)
       Serial.print(F("deserializeJson() failed: "));
     if (DEBUG)
