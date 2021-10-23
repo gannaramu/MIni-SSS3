@@ -10,7 +10,8 @@ import Button from '@mui/material/Button';
 
 export default function CAN_Gen_Table(props) {
   useEffect(() => {
-    console.log(props.data);
+    // console.log(props.data);
+    var can_gen_rows = Object.values(props.data);
   });
 
   const cellHandler = useCallback((params) => {
@@ -27,7 +28,7 @@ export default function CAN_Gen_Table(props) {
 
   return (
     <div style={{ height: 600 }}>
-      <DataGrid rowHeight={25} editMode="row" rows={props.data} columns={columns} onEditCellPropsChange={cellHandler} onRowEditCommit={upateCompleate}/>
+      <DataGrid rowHeight={25} editMode="row" rows={Object.values(props.data)} columns={columns} onEditCellPropsChange={cellHandler} onRowEditCommit={upateCompleate}/>
     </div>
   );
 }

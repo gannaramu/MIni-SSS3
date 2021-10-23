@@ -30,6 +30,7 @@ export function CANData(ID, Count, LEN, B0, B1, B2, B3, B4, B5, B6, B7) {
 }
 
 export function CANGenData(
+  id,
   ThreadID,
   enabled,
   ThreadName,
@@ -54,6 +55,7 @@ export function CANGenData(
   B7
 ) {
   return {
+    id,
     ThreadID,
     enabled,
     ThreadName,
