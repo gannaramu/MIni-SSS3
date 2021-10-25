@@ -7,4 +7,3 @@
 [submodule "Mini-SSS3-Firmware/lib/ArduinoThread"]
 	path = Mini-SSS3-Firmware/lib/ArduinoThread
 	url = https://github.com/ivanseidel/ArduinoThread.git
-
