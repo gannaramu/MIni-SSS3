@@ -1,0 +1,24 @@
+{
+    "files.associations": {
+        "random": "cpp",
+        "string_view": "cpp",
+        "regex": "cpp",
+        "*.tpp": "cpp",
+        "array": "cpp",
+        "*.tcc": "cpp",
+        "algorithm": "cpp",
+        "numeric": "cpp",
+        "*.ori": "cpp",
+        "string": "cpp",
+        "initializer_list": "cpp",
+        "utility": "cpp",
+        "deque": "cpp",
+        "list": "cpp",
+        "unordered_map": "cpp",
+        "vector": "cpp",
+        "aiotc_config.h": "c",
+        "timelib.h": "c",
+        "time.h": "c",
+        "system_error": "cpp"
+    }
+}
