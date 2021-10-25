@@ -34,7 +34,7 @@ DynamicJsonDocument can_gen_doc(2048);
 #define num_default_messages 21
 String default_messages[num_default_messages] = {
     F("DDEC MCM 01;                   1;1;0;2;  10;   0;0;1; 8FF0001;8;01;02;03;04;05;06;07;08\n"), //DDEC 13 MCM message; CAN1
-    F("DDEC TCM 01;                   2;1;0;2;  10;   0;0;1; CF00203;8; 9; a; b; c; d; e; f; 0\n"), //DDEC13 Transmission controler message; CAN1
+    F("DDEC TCM 01;                   2;1;0;2;  10;   0;0;1; CF00203;8; 9; a; b; c; d; e; f; 0\n"), //DDEC13 Transmission controller message; CAN1
     F("DDEC TCM 02;                   3;1;0;2;  10;   0;0;1; 8FF0303;8; 0; 0; 0; 0; 0; 0; 0; 0"),   //DDEC 13 TCM message; CAN1
     F("DDEC TCM 03;                   4;1;0;2; 100;   0;0;1;18F00503;8; 0; 0; 0; 0; 0; 0; 0; 0"),   //Transmission on DDEC 13
     F("HRW from Brake Controller;     5;1;0;0;  20;   0;0;1; CFE6E0B;8; 0; 0; 0; 0; 0; 0; 0; 0"),   //High Resolution wheel speed message from SA=11 (brake controller)
