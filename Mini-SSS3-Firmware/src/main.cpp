@@ -1,3 +1,5 @@
+#define ARDUINO_ETHERNET_SHIELD
+#define BOARD_HAS_ECCX08
 #include <Arduino.h>
 #include <SPI.h>
 #include <Ethernet.h>
@@ -8,14 +10,28 @@
 #include <Microchip_PAC193x.h>
 #include <FlexCAN_T4.h>
 #include "CAN_Message_Threads.h"
+#include <ArduinoBearSSL.h>
+#include <ArduinoECCX08.h>
+#include <ArduinoMqttClient.h>
+#include <arduino_secrets.h>
+#include <TimeLib.h>
+#include "Arduino_DebugUtils.h"
+
+time_t RTCTime;
 
 // extern void reloadCAN();
 // Enter a MAC address for your controller below.
 // Newer Ethernet shields have a MAC address printed on a sticker on the shield
-byte mac[] = {
-    0x00, 0xAA, 0xBB, 0xCC, 0xDE, 0x04};
+
 IPAddress ip(192, 168, 1, 177);
 EthernetServer server(80);
+EthernetClient client;
+BearSSLClient sslClient(client); // Used for SSL/TLS connection, integrates with ECC508
+MqttClient mqttClient(sslClient);
+const char broker[] = SECRET_BROKER;
+const char *certificate = SECRET_CERTIFICATE;
+unsigned long lastMillis = 0;
+
 Application app;
 uint8_t buff[2048];
 char buff_c[2048];
@@ -31,6 +47,69 @@ StaticJsonDocument<2048> can_dict;
 // extern ThreadController can_thread_controller;
 
 // extern CanThread* can_messages;
+
+
+/* AWS IOT related Functions */
+extern "C"
+{
+  // This must exist to keep the linker happy but is never called.
+  int _gettimeofday(struct timeval *tv, void *tzvp)
+  {
+    Serial.println("_gettimeofday dummy");
+    uint64_t t = Teensy3Clock.get();
+    ;                                      // get uptime in nanoseconds
+    tv->tv_sec = t / 1000000000;           // convert to seconds
+    tv->tv_usec = (t % 1000000000) / 1000; // get remaining microseconds
+    return 0;                              // return non-zero for error
+  }                                        // end _gettimeofday()
+}
+
+unsigned long getTime()
+{
+  return Teensy3Clock.get();
+}
+
+
+void connectMQTT()
+{
+  Serial.print("Attempting to MQTT broker: ");
+  Serial.print(broker);
+  Serial.println(" ");
+
+  while (!mqttClient.connect(broker, 8883))
+  {
+    // failed, retry
+    Serial.print(".");
+    delay(5000);
+  }
+  Serial.println();
+
+  Serial.println("You're connected to the MQTT broker");
+  Serial.println();
+
+  // subscribe to a topic
+  mqttClient.subscribe("arduino/incoming");
+}
+
+
+void onMessageReceived(int messageSize)
+{
+  // we received a message, print out the topic and contents
+  Serial.print("Received a message with topic '");
+  Serial.print(mqttClient.messageTopic());
+  Serial.print("', length ");
+  Serial.print(messageSize);
+  Serial.println(" bytes:");
+
+  // use the Stream interface to print the contents
+  while (mqttClient.available())
+  {
+    Serial.print((char)mqttClient.read());
+  }
+  Serial.println();
+
+  Serial.println();
+}
 
 bool parse_response(uint8_t *buffer)
 {
@@ -92,12 +171,9 @@ void update_keySw(Request &req, Response &res)
   // return read_keySw(req, res);
 }
 
-void read_potentiometers(Request &req, Response &res)
+DynamicJsonDocument getStatus_pots()
 {
   DynamicJsonDocument response(2048);
-  char json[2048];
-  if (DEBUG)
-    Serial.print("Got GET Request for Potentiometers, returned: ");
   response["pot1"]["wiper"]["value"] = SPIpotWiperSettings[0];
   response["pot1"]["sw"]["value"] = 0;
   response["pot1"]["sw"]["meta"] = "TBD";
@@ -113,13 +189,31 @@ void read_potentiometers(Request &req, Response &res)
   response["pot4"]["wiper"]["value"] = SPIpotWiperSettings[3];
   response["pot4"]["sw"]["value"] = 0;
   response["pot4"]["sw"]["meta"] = "TBD";
-
-  // serializeJson(response, json);
-  serializeJsonPretty(response, json);
-  if (DEBUG)
-    Serial.println(json);
+  return response;
+}
+void read_potentiometers(Request &req, Response &res)
+{
+  // DynamicJsonDocument response(2048);
+  char json[2048];
+  Debug.print(DBG_INFO,"Got GET Request for Potentiometers, returned: ");
+  serializeJsonPretty(getStatus_pots(), json);
+  Debug.print(DBG_DEBUG,json);
   res.print(json);
 }
+
+void publishMessage()
+{
+  Serial.println("Publishing message");
+
+  // send message, the Print interface can be used to set the message contents
+  mqttClient.beginMessage("arduino/outgoing");
+  // mqttClient.print("Hello from Mini SSS3 ");
+  // mqttClient.print(millis());
+
+  serializeJson(getStatus_pots(), mqttClient);
+  mqttClient.endMessage();
+}
+
 
 int digitalPotWrite(int value, int CS)
 {
@@ -206,9 +300,16 @@ void setup()
 {
   setPinModes();
   Wire.begin();
-
   SPI.begin();
+
+  // Get burned in MAC address
+  byte mac[6];
+  for (uint8_t by = 0; by < 2; by++)
+    mac[by] = (HW_OCOTP_MAC1 >> ((1 - by) * 8)) & 0xFF;
+  for (uint8_t by = 0; by < 4; by++)
+    mac[by + 2] = (HW_OCOTP_MAC0 >> ((3 - by) * 8)) & 0xFF;
   Ethernet.init(14); // Most Arduino shields
+  
   Can1.begin();
   Can1.setBaudRate(250000);
   Can2.begin();
@@ -220,13 +321,12 @@ void setup()
     ; // wait for serial port to connect. Needed for native USB port only
   }
   // start the Ethernet connection and the server:
-  Ethernet.begin(mac, ip);
-
+  // Ethernet.begin(mac, ip); for server
+  Ethernet.begin(mac);
   // Check for Ethernet hardware present
   if (Ethernet.hardwareStatus() == EthernetNoHardware)
   {
-    if (DEBUG)
-      Serial.println("Ethernet shield was not found.  Sorry, can't run without hardware. :(");
+    Debug.print(DBG_DEBUG, "Ethernet shield was not found.  Sorry, can't run without hardware. :(");
     while (true)
     {
       delay(1); // do nothing, no point running without Ethernet hardware
@@ -234,14 +334,17 @@ void setup()
   }
   if (Ethernet.linkStatus() == LinkOFF)
   {
-    if (DEBUG)
-      Serial.println("Ethernet cable is not connected.");
+    Debug.print(DBG_DEBUG, "Ethernet cable is not connected.");
   }
-  // print your local IP address:
-  if (DEBUG)
-    Serial.print("My IP address asdasd: ");
-  if (DEBUG)
-    Serial.println(Ethernet.localIP());
+
+   Debug.print(DBG_INFO,"MAC: %02x:%02x:%02x:%02x:%02x:%02x\n", mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
+  Serial.println();
+  Debug.print(DBG_INFO,"My IP address: ");
+  Serial.println(Ethernet.localIP());
+  ArduinoBearSSL.onGetTime(getTime);
+  sslClient.setEccSlot(0, certificate);
+  mqttClient.onMessage(onMessageReceived);
+
   app.get("/led", &read_keySw);
   app.put("/led", &update_keySw);
   app.post("/led", &update_keySw);
@@ -257,10 +360,26 @@ void setup()
   reloadCAN();
   delay(100);
   stopCAN();
+
 }
 
 void loop()
 {
+
+  if (!mqttClient.connected()) {
+    // MQTT client is disconnected, connect
+    connectMQTT();
+  }
+
+  // poll for new MQTT messages and send keep alive
+  mqttClient.poll();
+
+  // publish a message roughly every 5 seconds.
+  if (millis() - lastMillis > 5000) {
+    lastMillis = millis();
+
+    publishMessage();
+  }
 
   EthernetClient client = server.available();
   // SSLClient client(base_client, TAs, (size_t)TAs_NUM, rand_pin);
