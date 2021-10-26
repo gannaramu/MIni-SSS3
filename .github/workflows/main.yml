@@ -42,6 +42,6 @@ jobs:
       uses: actions/upload-artifact@v2
       with:
         name: build-hex-file
-        path: /Mini-SSS3-Firmware/.pio/build/teensy40/firmware.hex
+        path: ./Mini-SSS3-Firmware/.pio/build/teensy40/firmware.hex
 
 
