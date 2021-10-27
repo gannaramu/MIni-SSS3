@@ -73,10 +73,10 @@ const int8_t silent = 15;
 // const int8_t IL2Pin = 38;
 // const int8_t buttonPin = 50; // Unused Pin no Button
 
-// const uint8_t numPWMs = 6;
-// const int8_t PWMPins[numPWMs] = {29, 30, 14, 22, 23, 16};
-// uint16_t pwmValue[numPWMs] = {500, 1000, 2048, 3000, 3500, 4096};
-// uint16_t pwmFrequency[numPWMs] = {245, 245, 200, 200, 100, 100};
+const uint8_t numPWMs = 4;
+const int8_t PWMPins[numPWMs] = {2, 4, 5, 6};
+uint16_t pwmValue[numPWMs] = {500, 1000, 2048, 4096};
+uint16_t pwmFrequency[numPWMs] = {245, 245, 200, 200};
 
 // const uint8_t numADCs = 6;
 // const int8_t analogInPins[numADCs] = {A21, A1, A0, A6, A11, A22};
@@ -87,9 +87,9 @@ const int8_t silent = 15;
 /*
  * Begin Default Settings
 */
-const uint8_t numSPIpots = 16;
+const uint8_t numSPIpots = 4;
 uint8_t SPIpotWiperSettings[numSPIpots] = {21, 56, 56, 255};
-// uint8_t SPIpotTCONSettings[numSPIpots] = {3, 3, 3, 7, 7, 3, 3, 7, 7, 7, 0, 0, 7, 7, 7, 0};
+uint8_t SPIpotTCONSettings[numSPIpots] = {3, 3, 3, 7};
 
 // const uint8_t numI2Cpots = 3;
 // uint8_t I2CpotWiperSettings[numI2Cpots] = {75, 150, 225};
@@ -141,9 +141,9 @@ void setPinModes()
     digitalWrite(ignitionCtlPin, LOW);
     analogWriteResolution(12); // analogWrite value 0 to 4095, or 4096 for high
 
-    // uint8_t i;
-    // for (i = 0; i < numPWMs; i++)
-    //     pinMode(PWMPins[i], OUTPUT);
+    uint8_t i;
+    for (i = 0; i < numPWMs; i++)
+        pinMode(PWMPins[i], OUTPUT);
     // for (i = 0; i < numADCs; i++)
     //     pinMode(analogInPins[i], INPUT);
 }

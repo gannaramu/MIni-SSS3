@@ -1,5 +1,7 @@
 #define ARDUINO_ETHERNET_SHIELD
 #define BOARD_HAS_ECCX08
+#define ARDUINOJSON_ENABLE_PROGMEM 0
+
 #include <Arduino.h>
 #include <SPI.h>
 #include <Ethernet.h>
@@ -24,6 +26,7 @@ time_t RTCTime;
 // Newer Ethernet shields have a MAC address printed on a sticker on the shield
 
 IPAddress ip(192, 168, 1, 177);
+
 EthernetServer server(80);
 EthernetClient client;
 BearSSLClient sslClient(client); // Used for SSL/TLS connection, integrates with ECC508
@@ -36,6 +39,7 @@ Application app;
 uint8_t buff[2048];
 char buff_c[2048];
 DynamicJsonDocument doc(2048);
+
 Microchip_PAC193x PAC;
 
 CAN_message_t msg;
@@ -47,7 +51,6 @@ StaticJsonDocument<2048> can_dict;
 // extern ThreadController can_thread_controller;
 
 // extern CanThread* can_messages;
-
 
 /* AWS IOT related Functions */
 extern "C"
@@ -69,48 +72,6 @@ unsigned long getTime()
   return Teensy3Clock.get();
 }
 
-
-void connectMQTT()
-{
-  Serial.print("Attempting to MQTT broker: ");
-  Serial.print(broker);
-  Serial.println(" ");
-
-  while (!mqttClient.connect(broker, 8883))
-  {
-    // failed, retry
-    Serial.print(".");
-    delay(5000);
-  }
-  Serial.println();
-
-  Serial.println("You're connected to the MQTT broker");
-  Serial.println();
-
-  // subscribe to a topic
-  mqttClient.subscribe("arduino/incoming");
-}
-
-
-void onMessageReceived(int messageSize)
-{
-  // we received a message, print out the topic and contents
-  Serial.print("Received a message with topic '");
-  Serial.print(mqttClient.messageTopic());
-  Serial.print("', length ");
-  Serial.print(messageSize);
-  Serial.println(" bytes:");
-
-  // use the Stream interface to print the contents
-  while (mqttClient.available())
-  {
-    Serial.print((char)mqttClient.read());
-  }
-  Serial.println();
-
-  Serial.println();
-}
-
 bool parse_response(uint8_t *buffer)
 {
   // Serial.print((char *)buffer);
@@ -122,11 +83,8 @@ bool parse_response(uint8_t *buffer)
 
   if (error)
   {
-    // #TODO: implement printf_debug
-    if (DEBUG)
-      Serial.print(F("deserializeJson() failed: "));
-    if (DEBUG)
-      Serial.println(error.f_str());
+    Debug.print(DBG_ERROR, "deserializeJson() failed: ");
+    // Serial.println(error.f_str());
     return false;
   }
 
@@ -171,49 +129,83 @@ void update_keySw(Request &req, Response &res)
   // return read_keySw(req, res);
 }
 
-DynamicJsonDocument getStatus_pots()
+DynamicJsonDocument getStatus_Pots()
 {
   DynamicJsonDocument response(2048);
-  response["pot1"]["wiper"]["value"] = SPIpotWiperSettings[0];
-  response["pot1"]["sw"]["value"] = 0;
-  response["pot1"]["sw"]["meta"] = "TBD";
+  for (int i = 0; i < 4; i++)
+  {
+    response["pot" + String(i)]["wiper"]["value"] = SPIpotWiperSettings[i];
+    response["pot" + String(i)]["sw"]["value"] = 0;
+    response["pot" + String(i)]["sw"]["meta"] = "TBD";
+  }
 
-  response["pot2"]["wiper"]["value"] = SPIpotWiperSettings[1];
-  response["pot2"]["sw"]["value"] = 0;
-  response["pot2"]["sw"]["meta"] = "TBD";
-
-  response["pot3"]["wiper"]["value"] = SPIpotWiperSettings[2];
-  response["pot3"]["sw"]["value"] = 0;
-  response["pot3"]["sw"]["meta"] = "TBD";
-
-  response["pot4"]["wiper"]["value"] = SPIpotWiperSettings[3];
-  response["pot4"]["sw"]["value"] = 0;
-  response["pot4"]["sw"]["meta"] = "TBD";
   return response;
 }
+
+DynamicJsonDocument getStatus_PWM()
+{
+  DynamicJsonDocument response(2048);
+  for (int i = 0; i < numPWMs; i++)
+  {
+    response["pwm" + String(i)]["duty"]["value"] = pwmValue[i];
+    response["pwm" + String(i)]["frequency"]["value"] = pwmFrequency[i];
+    response["pwm" + String(i)]["switch"]["value"] = 1;
+  }
+  return response;
+}
+
+DynamicJsonDocument getStatus_PAC()
+{
+  DynamicJsonDocument response(2048);
+  PAC.UpdateVoltage();
+  float temp = PAC.Voltage1;
+  response["pot1"]["voltage"] = PAC.Voltage1 / 1000;
+  response["pot1"]["current"] = -1;
+  response["pot2"]["voltage"] = PAC.Voltage2 / 1000;
+  response["pot2"]["current"] = -1;
+  response["pot3"]["voltage"] = PAC.Voltage4 / 1000;
+  response["pot3"]["current"] = -1;
+  response["pot4"]["voltage"] = PAC.Voltage3 / 1000;
+  response["pot4"]["current"] = -1;
+  return response;
+}
+
 void read_potentiometers(Request &req, Response &res)
 {
-  // DynamicJsonDocument response(2048);
   char json[2048];
-  Debug.print(DBG_INFO,"Got GET Request for Potentiometers, returned: ");
-  serializeJsonPretty(getStatus_pots(), json);
-  Debug.print(DBG_DEBUG,json);
+  Debug.print(DBG_INFO, "Got GET Request for Potentiometers, returned: ");
+  serializeJsonPretty(getStatus_Pots(), json);
+  Debug.print(DBG_DEBUG, json);
   res.print(json);
 }
 
-void publishMessage()
+void read_pac1934(Request &req, Response &res)
 {
-  Serial.println("Publishing message");
-
-  // send message, the Print interface can be used to set the message contents
-  mqttClient.beginMessage("arduino/outgoing");
-  // mqttClient.print("Hello from Mini SSS3 ");
-  // mqttClient.print(millis());
-
-  serializeJson(getStatus_pots(), mqttClient);
-  mqttClient.endMessage();
+  char json[2048];
+  Debug.print(DBG_INFO, "Got GET Request for PAC1934: ");
+  serializeJsonPretty(getStatus_PAC(), json);
+  Debug.print(DBG_DEBUG, json);
+  res.print(json);
 }
 
+void read_PWM(Request &req, Response &res)
+{
+  char json[2048];
+  Debug.print(DBG_INFO, "Got GET Request for PAC1934: ");
+  serializeJsonPretty(getStatus_PWM(), json);
+  Debug.print(DBG_DEBUG, json);
+  res.print(json);
+}
+
+void read_CAN(Request &req, Response &res)
+{
+  if (DEBUG)
+    Serial.print("Got GET Request for Read CAN: ");
+  char json[2048];
+  serializeJsonPretty(can_dict, json);
+  // if (DEBUG) Serial.println(json);
+  res.print(json);
+}
 
 int digitalPotWrite(int value, int CS)
 {
@@ -261,39 +253,99 @@ void update_potentiometers(Request &req, Response &res)
   }
 }
 
-void read_pac1934(Request &req, Response &res)
+void update_pwm(Request &req, Response &res)
 {
-  if (DEBUG)
-    Serial.print("Got GET Request for PAC1934: ");
-  DynamicJsonDocument response(2048);
-  char json[2048];
-  if (DEBUG)
-    Serial.print("Got GET Request for Potentiometers, returned: ");
-  PAC.UpdateVoltage();
-  float temp = PAC.Voltage1;
-  response["pot1"]["voltage"] = PAC.Voltage1 / 1000;
-  response["pot1"]["current"] = -1;
-  response["pot2"]["voltage"] = PAC.Voltage2 / 1000;
-  response["pot2"]["current"] = -1;
-  response["pot3"]["voltage"] = PAC.Voltage4 / 1000;
-  response["pot3"]["current"] = -1;
-  response["pot4"]["voltage"] = PAC.Voltage3 / 1000;
-  response["pot4"]["current"] = -1;
-
-  serializeJsonPretty(response, json);
-  if (DEBUG)
-    Serial.println(json);
-  res.print(json);
 }
 
-void read_CAN(Request &req, Response &res)
+void connectMQTT()
 {
-  if (DEBUG)
-    Serial.print("Got GET Request for Read CAN: ");
-  char json[2048];
-  serializeJsonPretty(can_dict, json);
-  // if (DEBUG) Serial.println(json);
-  res.print(json);
+  Serial.print("Attempting to MQTT broker: ");
+  Serial.print(broker);
+  Serial.println(" ");
+
+  while (!mqttClient.connect(broker, 8883))
+  {
+    // failed, retry
+    Serial.print(".");
+    delay(5000);
+  }
+  Serial.println();
+
+  Serial.println("You're connected to the MQTT broker");
+  Serial.println();
+
+  // subscribe to a topic
+  mqttClient.subscribe("arduino/incoming");
+  mqttClient.subscribe("update/PWM");
+  mqttClient.subscribe("update/PAC");
+  mqttClient.subscribe("update/Pots");
+  mqttClient.subscribe("$aws/things/mini-sss3-1/shadow/get/accepted");
+  mqttClient.subscribe("$aws/things/mini-sss3-1/shadow/update/delta");
+
+  mqttClient.beginMessage("$aws/things/mini-sss3-1/shadow/get");
+  mqttClient.endMessage();
+}
+
+void onMessageReceived(int messageSize)
+{
+  // we received a message, print out the topic and contents
+  Serial.println();
+  Serial.print("Received a message with topic '");
+  Serial.print(mqttClient.messageTopic());
+  Serial.print("', length ");
+  Serial.print(messageSize);
+  Serial.println(" bytes:");
+
+  StaticJsonDocument<5000> onMessage;
+  deserializeJson(onMessage, mqttClient);
+  // serializeJsonPretty(onMessage, Serial);
+  JsonObject root = onMessage.as<JsonObject>();
+
+  for (JsonPair kv : root)
+  {
+    Serial.println(kv.key().c_str());
+    if (kv.key() == "state")
+    {
+      serializeJsonPretty(kv.value(), Serial);
+    }
+    // Serial.println();
+  }
+}
+
+void publishMessage()
+{
+  Debug.print(DBG_INFO, "Publishing message");
+
+  // send message, the Print interface can be used to set the message contents
+  // mqttClient.beginMessage("PAC");
+  // serializeJson(getStatus_PAC(), mqttClient);
+  // mqttClient.endMessage();
+
+  // mqttClient.beginMessage("PWM");
+  // serializeJson(getStatus_PWM(), mqttClient);
+  // mqttClient.endMessage();
+
+  // mqttClient.beginMessage("Pots");
+  // serializeJson(getStatus_Pots(), mqttClient);
+  // mqttClient.endMessage();
+
+  mqttClient.beginMessage("$aws/things/mini-sss3-1/shadow/update");
+  StaticJsonDocument<2048> update;
+  update["state"]["reported"]["Pots"] = getStatus_Pots();
+  serializeJson(update, mqttClient);
+  mqttClient.endMessage();
+
+  mqttClient.beginMessage("$aws/things/mini-sss3-1/shadow/update");
+  update.clear();
+  update["state"]["reported"]["PWM"] = getStatus_PWM();
+  serializeJson(update, mqttClient);
+  mqttClient.endMessage();
+
+  mqttClient.beginMessage("$aws/things/mini-sss3-1/shadow/update");
+  update.clear();
+  update["state"]["reported"]["PAC"] = getStatus_PAC();
+  serializeJson(update, mqttClient);
+  mqttClient.endMessage();
 }
 
 void setup()
@@ -309,7 +361,7 @@ void setup()
   for (uint8_t by = 0; by < 4; by++)
     mac[by + 2] = (HW_OCOTP_MAC0 >> ((3 - by) * 8)) & 0xFF;
   Ethernet.init(14); // Most Arduino shields
-  
+
   Can1.begin();
   Can1.setBaudRate(250000);
   Can2.begin();
@@ -337,9 +389,9 @@ void setup()
     Debug.print(DBG_DEBUG, "Ethernet cable is not connected.");
   }
 
-   Debug.print(DBG_INFO,"MAC: %02x:%02x:%02x:%02x:%02x:%02x\n", mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
+  Debug.print(DBG_INFO, "MAC: %02x:%02x:%02x:%02x:%02x:%02x\n", mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
   Serial.println();
-  Debug.print(DBG_INFO,"My IP address: ");
+  Debug.print(DBG_INFO, "My IP address: ");
   Serial.println(Ethernet.localIP());
   ArduinoBearSSL.onGetTime(getTime);
   sslClient.setEccSlot(0, certificate);
@@ -360,13 +412,14 @@ void setup()
   reloadCAN();
   delay(100);
   stopCAN();
-
 }
 
 void loop()
 {
+  EthernetClient client = server.available();
 
-  if (!mqttClient.connected()) {
+  if (!mqttClient.connected())
+  {
     // MQTT client is disconnected, connect
     connectMQTT();
   }
@@ -375,13 +428,13 @@ void loop()
   mqttClient.poll();
 
   // publish a message roughly every 5 seconds.
-  if (millis() - lastMillis > 5000) {
+  if (millis() - lastMillis > 5000)
+  {
     lastMillis = millis();
 
     publishMessage();
   }
 
-  EthernetClient client = server.available();
   // SSLClient client(base_client, TAs, (size_t)TAs_NUM, rand_pin);
 
   // WriteLoggingStream loggingClient(client, Serial);
@@ -392,6 +445,7 @@ void loop()
   // loggingStream.write("test");
   if (client.connected())
   {
+    Debug.print(DBG_INFO, "Client connected");
     app.process(&client);
   }
   if (Can1.read(msg))

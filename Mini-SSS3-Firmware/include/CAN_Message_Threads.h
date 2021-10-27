@@ -774,7 +774,7 @@ bool parse_response_can_gen_doc(uint8_t *buffer)
     if (DEBUG)
       Serial.print(F("deserializeJson() failed: "));
     if (DEBUG)
-      Serial.println(error.f_str());
+      // Serial.println(error.f_str());
     return false;
   }
 
