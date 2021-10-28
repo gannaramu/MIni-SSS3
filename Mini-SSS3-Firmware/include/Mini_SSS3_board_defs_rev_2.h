@@ -90,7 +90,7 @@ uint16_t pwmFrequency[numPWMs] = {245, 245, 200, 200};
 const uint8_t numSPIpots = 4;
 uint8_t SPIpotWiperSettings[numSPIpots] = {21, 56, 56, 255};
 uint8_t SPIpotTCONSettings[numSPIpots] = {3, 3, 3, 7};
-
+uint8_t SPIpotCS[numSPIpots] ={CS_U1, CS_U2, CS_U3, CS_U4};
 // const uint8_t numI2Cpots = 3;
 // uint8_t I2CpotWiperSettings[numI2Cpots] = {75, 150, 225};
 // uint8_t I2CpotTCONSettings[numI2Cpots] = {7, 7, 7};

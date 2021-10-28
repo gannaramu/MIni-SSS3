@@ -38,11 +38,11 @@
   "devDependencies": {
     "awot-scripts": "0.0.28"
   },
-  "proxy": "http://192.168.1.177/",
+  "proxy": "http://192.168.137.81/",
   "awot-static": {
     "sources": "./build",
     "indexFile": "index.html",
-    "sketchDir": "../Mini-SSS3-Firmware/src/",
+    "sketchDir": "../Mini-SSS3-Firmware/include/",
     "exclude": [
       "*.map",
       "service-worker.js"
