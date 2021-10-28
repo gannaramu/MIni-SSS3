@@ -71,7 +71,7 @@
 #define pgm_read_byte(ptr) (unsigned char)(* ptr)
 #endif
 
-#define P(name) static const unsigned char name[]
+#define P(name) static const unsigned char name[] PROGMEM
 #define SIZE(array) (sizeof(array) / sizeof(*array))
 
 class Request: public Stream {
@@ -101,7 +101,7 @@ class Request: public Stream {
     bool route(int number, char *buffer, int bufferLength);
     bool timeout();
 
-    // dummy implementation for the stream intreface
+    // dummy implementation for the stream interface
     void flush();
     size_t write(uint8_t data);
 

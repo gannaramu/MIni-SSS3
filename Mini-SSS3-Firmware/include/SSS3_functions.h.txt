@@ -2016,7 +2016,7 @@ void  adjustError() {
 void turnOnAdjustMode() {
   ADJUST_MODE_ON = 1;
   Serial.println(("INFO AO - Turned Adjustment mode on. Type AF or click to turn off. Type SS,XXXX  or scroll knob and click to set settings."));
-  Serial.print(("INFO Current Setting for Adjustement is "));
+  Serial.print(("INFO Current Setting for Adjustment is "));
   Serial.print(currentSetting);
   Serial.print(" - ");
   Serial.println(settingNames[currentSetting]);
@@ -2409,7 +2409,7 @@ void clearStats() {
   Can1.clearStats();
   Can0.startStats();
   Can1.startStats();
-  Serial.println("INFO Cleared CAN Statisitics");
+  Serial.println("INFO Cleared CAN Statistics");
 }
 
 void listInfo() {

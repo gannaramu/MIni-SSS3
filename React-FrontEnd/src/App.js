@@ -1,19 +1,13 @@
 // import {Component} from 'react';
 import * as React from "react";
-
-import ToggleButton from "react-toggle-button";
 import "./App.css";
-import { Switch, Button, TextField } from "@mui/material";
+import { Switch } from "@mui/material";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
-// import { styled } from "@mui/system";
 import { styled } from "@mui/material/styles";
 import CSULogo from "./CSU-Ram-357-617.svg";
 
 import PropTypes from "prop-types";
-import SwipeableViews from "react-swipeable-views";
-import { useTheme } from "@mui/material/styles";
-import AppBar from "@mui/material/AppBar";
 import Tabs from "@mui/material/Tabs";
 import Tab from "@mui/material/Tab";
 import Box from "@mui/material/Box";
@@ -21,7 +15,21 @@ import PWM from "./PWM";
 import Pot from "./Pot";
 import CAN_Table from "./CAN_Table";
 
-import { PWMD, Duty, Freq, SW, PotD, Wiper, Monitor, CANData } from "./data";
+import {
+  PWMD,
+  Duty,
+  Freq,
+  SW,
+  PotD,
+  Wiper,
+  Monitor,
+  CANData,
+  CANGenData,
+} from "./data";
+import CAN_Gen_Table from "./CAN_Gen_Table";
+import { v4 as uuidv4 } from "uuid";
+const UUID = require('uuid-int');
+const generator = UUID(0);
 
 function TabPanel(props) {
   const { children, value, index, ...other } = props;
@@ -234,6 +242,30 @@ const pot4 = PotD(
 );
 
 const can1 = CANData("0xDEAD", 159, 8, 1, 2, 3, 4, 5, 6, 7, 8);
+// enable,ThreadName, num_messages,message_index, cycle_count,channel,tx_periodLEN, tx_delay,stop_after_count,extended, ID,DLC,B0, B1,B2,B3,B4,B5,B6,B7
+const can_gen_data = CANGenData(
+  0,
+  0,
+  "Test Thread Name",
+  1,
+  0,
+  123,
+  0,
+  100,
+  100,
+  123,
+  1,
+  "0xDEAD",
+  8,
+  1,
+  2,
+  3,
+  4,
+  5,
+  6,
+  7,
+  8
+);
 
 class App extends React.Component {
   constructor(props) {
@@ -280,12 +312,13 @@ class App extends React.Component {
         // },
       },
       pots: {
-        pot1: pot1,
-        pot2: pot2,
-        pot3: pot3,
-        pot4: pot4,
+        "0": pot1,
+        "1": pot2,
+        "2": pot3,
+        "3": pot4,
       },
       can_rows: [],
+      can_gen: {},
     };
     this.handleChange = this.handleChange.bind(this);
     // this.setPWMDuty = this.setPWMDuty.bind(this);
@@ -295,6 +328,8 @@ class App extends React.Component {
     this.post_pwm = this.post_pwm.bind(this);
     this.PostPots = this.PostPots.bind(this);
     this.setPotWiper = this.setPotWiper.bind(this);
+    this.setCANCell = this.setCANCell.bind(this);
+    this.PostCANRow = this.PostCANRow.bind(this);
   }
 
   setLedState(state) {
@@ -315,6 +350,7 @@ class App extends React.Component {
     });
   }
 
+  // PWM
   setPWMState_fromResponse(state) {
     //console.log("input of setPWMstatea from response", state);
     let items = this.state.pwm;
@@ -341,96 +377,6 @@ class App extends React.Component {
     });
   }
 
-  setPotState_fromResponse(state) {
-    //console.log("input of setPotState from response", state);
-    let items = this.state.pots;
-    for (const [key, value] of Object.entries(state)) {
-      let item = { ...items[key] };
-      for (const [key, wiper] of Object.entries(value)) {
-        //console.log(key, wiper);
-        if (!(key in item)) {
-          item[key] = {};
-        }
-        item[key]["value"] = wiper.value;
-        item[key]["error"] = false;
-      }
-      items[key] = item;
-    }
-    //console.log("items: ", items);
-    this.setState({
-      pots: items,
-    });
-  }
-
-  setPotMonitor_fromResponse(state) {
-    // //console.log("input of setPotMonitor from response", state);
-    let items = this.state.pots;
-    for (const [key, value] of Object.entries(state)) {
-      let item = { ...items[key] };
-      for (const [key2, value] of Object.entries(value)) {
-        // //console.log(key, key2,value);
-        // //console.log(item);
-        item["monitor"][key2] = value;
-      }
-      items[key] = item;
-    }
-    // //console.log("items: ", items);
-    this.setState({
-      pots: items,
-    });
-  }
-
-  setCAN_fromResponse(state) {
-    ////console.log("input of setCAN from response", state);
-    let items = this.state.can_rows;
-    if(state){
-    for (const [key, value] of Object.entries(state)) {
-      //   let item = { ...items[key] };
-      //   for (const [key2, value] of Object.entries(value)) {
-      // ////console.log(key);
-      let item = { ...items[key] };
-      if (!(key in items)) {
-        ////console.log("Here");
-        item = CANData(
-          value.ID,
-          value.count,
-          value.LEN,
-          value.DATA[0],
-          value.DATA[1],
-          value.DATA[2],
-          value.DATA[3],
-          value.DATA[4],
-          value.DATA[5],
-          value.DATA[6],
-          value.DATA[7]
-        );
-      }
-      else{
-        item.ID = value.ID;
-        item.Count = value.count;
-        item.LEN = value.LEN;
-        item.B0 = value.DATA[0];
-        item.B1 = value.DATA[1];
-        item.B2 = value.DATA[2];
-        item.B3 = value.DATA[3];
-        item.B4 = value.DATA[4];
-        item.B5 = value.DATA[5];
-        item.B6 = value.DATA[6];
-        item.B7 = value.DATA[7];
-      }
-      // item.ID = value.ID;
-      // ////console.log("item: ",item);
-
-      //   }
-      items[key] = item;
-    }
-  }
-    // ////console.log("items: ", items);
-    // this.setState({
-    //   pots: items,
-    // });
-  }
-
   setPWMDuty(name, duty) {
     //console.log("Input of setPWMDuty", name, duty);
     // //console.log("State:", this.state.pwm);
@@ -452,69 +398,6 @@ class App extends React.Component {
     });
   }
 
-  setPWMSwitch(name, value) {
-    //console.log("Input of setPWMSwitch", name, value);
-    let items = this.state.pwm;
-    //console.log("Items:", items);
-    let item = { ...items[name] };
-    //console.log("Item:", item);
-    item.sw.value = value;
-    items[name] = item;
-
-    this.setState({
-      pwm: items,
-    });
-    this.post_pwm();
-  }
-
-  async post_pwm() {
-    //console.log("input to post_pwm: ", this.state.pwm);
-
-    var myHeaders = new Headers();
-    myHeaders.append("Content-Type", "application/json");
-    var body = this.state.pwm;
-    var raw = JSON.stringify(body);
-
-    var requestOptions = {
-      method: "POST",
-      headers: myHeaders,
-      body: raw,
-      redirect: "follow",
-    };
-
-    let response = await fetch("/pwm", requestOptions);
-    let state = await response.json();
-    //console.log(state);
-    this.setPWMState_fromResponse(state);
-    // this.setState({
-    //   ledOn: state !== "0",
-    // });
-    //console.log(this.state);
-  }
-
-  async PostPots(name) {
-    //console.log("input to post_pot: ", name);
-
-    var myHeaders = new Headers();
-    myHeaders.append("Content-Type", "application/json");
-    var pwm_body = this.state.pots[name];
-
-    var obj = {};
-    obj[name] = pwm_body;
-    var requestOptions = {
-      method: "POST",
-      headers: myHeaders,
-      body: JSON.stringify(obj),
-      redirect: "follow",
-    };
-    // //console.log(requestOptions)
-    let response = await fetch("/pots", requestOptions);
-    let state = await response.json();
-    //console.log(state);
-    this.setPWMState_fromResponse(state);
-
-    // //console.log(this.state);
-  }
   setPWMFreq(name, freq) {
     //console.log("Input of setPWMState", name, freq);
     //console.log("State:", this.state.pwm);
@@ -537,25 +420,19 @@ class App extends React.Component {
     });
   }
 
-  setPotWiper(name, value) {
-    //console.log("Input of setPotWiper", name, value);
-    // //console.log("State:", this.state.pwm);
-    let items = this.state.pots;
+  setPWMSwitch(name, value) {
+    //console.log("Input of setPWMSwitch", name, value);
+    let items = this.state.pwm;
     //console.log("Items:", items);
     let item = { ...items[name] };
     //console.log("Item:", item);
-    item.wiper.value = value;
-    if (value > 256 || value < 0) {
-      item.wiper.error = true;
-      item.wiper.helperText = "value should be between 0-256";
-    } else {
-      item.wiper.error = false;
-      item.wiper.helperText = "";
-      items[name] = item;
-    }
+    item.sw.value = value;
+    items[name] = item;
+
     this.setState({
-      pots: items,
+      pwm: items,
     });
+    this.post_pwm();
   }
 
   DCChangeHandler(event) {
@@ -598,6 +475,270 @@ class App extends React.Component {
     }
   }
 
+  
+  async post_pwm() {
+    //console.log("input to post_pwm: ", this.state.pwm);
+
+    var myHeaders = new Headers();
+    myHeaders.append("Content-Type", "application/json");
+    var body = this.state.pwm;
+    var raw = JSON.stringify(body);
+
+    var requestOptions = {
+      method: "POST",
+      headers: myHeaders,
+      body: raw,
+      redirect: "follow",
+    };
+
+    let response = await fetch("/pwm", requestOptions);
+    let state = await response.json();
+    //console.log(state);
+    this.setPWMState_fromResponse(state);
+    // this.setState({
+    //   ledOn: state !== "0",
+    // });
+    //console.log(this.state);
+  }
+
+  // Pots 
+  setPotState_fromResponse(state) {
+    //console.log("input of setPotState from response", state);
+    let items = this.state.pots;
+    for (const [key, value] of Object.entries(state)) {
+      let item = { ...items[key] };
+      for (const [key, wiper] of Object.entries(value)) {
+        //console.log(key, wiper);
+        if (!(key in item)) {
+          item[key] = {};
+        }
+        item[key]["value"] = wiper.value;
+        item[key]["error"] = false;
+      }
+      items[key] = item;
+    }
+    //console.log("items: ", items);
+    this.setState({
+      pots: items,
+    });
+  }
+
+  setPotWiper(name, value) {
+    // console.log("Input of setPotWiper", name, value);
+    // console.log("State:", this.state.pwm);
+    let items = this.state.pots;
+    //console.log("Items:", items);
+    let item = { ...items[name] };
+    //console.log("Item:", item);
+    item.wiper.value = value;
+    if (value > 256 || value < 0) {
+      item.wiper.error = true;
+      item.wiper.helperText = "value should be between 0-256";
+    } else {
+      item.wiper.error = false;
+      item.wiper.helperText = "";
+      items[name] = item;
+    }
+
+    // console.log("items: ", items);
+    this.setState({
+      pots: items,
+    });
+  }
+  async PostPots(name) {
+    //console.log("input to post_pot: ", name);
+
+    var myHeaders = new Headers();
+    myHeaders.append("Content-Type", "application/json");
+    var pwm_body = this.state.pots[name];
+
+    var obj = {};
+    obj[name] = pwm_body;
+    var requestOptions = {
+      method: "POST",
+      headers: myHeaders,
+      body: JSON.stringify(obj),
+      redirect: "follow",
+    };
+    // //console.log(requestOptions)
+    let response = await fetch("/pots", requestOptions);
+    let state = await response.json();
+    //console.log(state);
+    this.setPWMState_fromResponse(state);
+
+    // //console.log(this.state);
+  }
+
+  setPotMonitor_fromResponse(state) {
+    // //console.log("input of setPotMonitor from response", state);
+    let items = this.state.pots;
+    for (const [key, value] of Object.entries(state)) {
+      let item = { ...items[key] };
+      for (const [key2, value] of Object.entries(value)) {
+        // console.log(key, key2,value);
+        // console.log(item);
+        item["monitor"][key2] = value;
+      }
+      items[key] = item;
+    }
+    // console.log("item s: ", items);
+    this.setState({
+      pots: items,
+    });
+  }
+
+  // CAN Gen
+  setCANGenState_fromResponse(state) {
+    // console.log("input of setCANGenState from response", state);
+    let items = this.state.can_gen;
+    for (const [ThreadID, value] of Object.entries(state)) {
+      if (!(ThreadID in items)) {
+        console.log(ThreadID + " not in items");
+        items[ThreadID] = can_gen_data;
+      }
+      let item = { ...items[ThreadID] };
+      // let item = {};
+      // console.log(item);
+      for (const [key, value] of Object.entries(value)) {
+        // console.log(ThreadID, key,value);
+
+        if (!(key in item)) {
+          item[key] = {};
+        }
+        if (key == "DATA") {
+          item["B0"] = value[0];
+          item["B1"] = value[1];
+          item["B2"] = value[2];
+          item["B3"] = value[3];
+          item["B4"] = value[4];
+          item["B5"] = value[5];
+          item["B6"] = value[6];
+          item["B7"] = value[7];
+        } else {
+          item[key] = value;
+        }
+      }
+      // item["ThreadID"] = ThreadID;
+      // item["id"] = generator.uuid();
+      item["id"] = parseInt(ThreadID);
+      // console.log(item);
+      // console.log("Index of : ", ThreadID,items.indexOf(item,0));
+      items[ThreadID] = item;
+    }
+    // console.log("items: ", items);
+    this.setState({
+      can_gen: items,
+    });
+  }
+
+  setCANCell(id, field, value) {
+    // console.log("setCANCell: ",id,field,value);
+    let items = [...this.state.can_gen];
+    let item = { ...items[id] };
+    item[field] = value;
+    items[id] = item;
+    // console.log(items);
+    this.setState({
+      can_gen: items,
+    });
+  }
+
+  async PostCANRow(id) {
+    // console.log("PostCANRow: ", id);
+    let items = [...this.state.can_gen];
+    let item = { ...items[id] };
+
+    // console.log(items);
+    item["DATA"] = [];
+    // for(int i=0; i<item["DLC"]; i++) {
+
+    // }
+    item["DATA"].push(item["B0"]);
+    item["DATA"].push(item["B1"]);
+    item["DATA"].push(item["B2"]);
+    item["DATA"].push(item["B3"]);
+    item["DATA"].push(item["B4"]);
+    item["DATA"].push(item["B5"]);
+    item["DATA"].push(item["B6"]);
+    item["DATA"].push(item["B7"]);
+
+    //console.log("input to post_pwm: ", this.state.pwm);
+
+    var myHeaders = new Headers();
+    myHeaders.append("Content-Type", "application/json");
+    var body = item;
+    var raw = JSON.stringify(body);
+    // console.log(raw);
+
+    var requestOptions = {
+      method: "POST",
+      headers: myHeaders,
+      body: raw,
+      redirect: "follow",
+    };
+
+    let response = await fetch("/cangen", requestOptions);
+    let state = await response.json();
+    //console.log(state);
+    this.setCANGenState_fromResponse(state);
+    // this.setState({
+  }
+
+  // CAN Monitor
+
+  setCAN_fromResponse(state) {
+    ////console.log("input of setCAN from response", state);
+    let items = this.state.can_rows;
+    if (state) {
+      for (const [key, value] of Object.entries(state)) {
+        //   let item = { ...items[key] };
+        //   for (const [key2, value] of Object.entries(value)) {
+        // ////console.log(key);
+        let item = { ...items[key] };
+        if (!(key in items)) {
+          ////console.log("Here");
+          item = CANData(
+            value.ID,
+            value.count,
+            value.LEN,
+            value.DATA[0],
+            value.DATA[1],
+            value.DATA[2],
+            value.DATA[3],
+            value.DATA[4],
+            value.DATA[5],
+            value.DATA[6],
+            value.DATA[7]
+          );
+        } else {
+          item.ID = value.ID;
+          item.Count = value.count;
+          item.LEN = value.LEN;
+          item.B0 = value.DATA[0];
+          item.B1 = value.DATA[1];
+          item.B2 = value.DATA[2];
+          item.B3 = value.DATA[3];
+          item.B4 = value.DATA[4];
+          item.B5 = value.DATA[5];
+          item.B6 = value.DATA[6];
+          item.B7 = value.DATA[7];
+        }
+        // item.ID = value.ID;
+        // ////console.log("item: ",item);
+
+        //   }
+        items[key] = item;
+      }
+    }
+    // ////console.log("items: ", items);
+    // this.setState({
+    //   pots: items,
+    // });
+  }
+
+
+ 
+
   componentDidMount() {
     Promise.all([
       fetch("/led")
@@ -611,13 +752,24 @@ class App extends React.Component {
         .then((response) => response.json())
         // .then((state) => //console.log(state)),
         .then((state) => this.setPotState_fromResponse(state)),
+
+      fetch("/cangen")
+        .then((response) => response.json())
+        // .then((state) => console.log(state)),
+        .then((state) => this.setCANGenState_fromResponse(state)),
     ]);
     const interval = setInterval(() => {
       this.read_voltage();
-    }, 1000);
+    }, 500);
     const can_interval = setInterval(() => {
       this.read_CAN();
     }, 100);
+    const can_gen_interval = setInterval(() => {
+      this.read_CAN_Gen();
+    }, 1000);
+
+
+    
   }
 
   async handleStateChange(ledOn) {
@@ -664,6 +816,12 @@ class App extends React.Component {
       .then((state) => this.setCAN_fromResponse(state));
   }
 
+  async read_CAN_Gen() {
+    fetch("/cangen")
+      .then((response) => response.json())
+      .then((state) => this.setCANGenState_fromResponse(state));
+  }
+
   render() {
     return (
       <>
@@ -707,6 +865,7 @@ class App extends React.Component {
                 <Tab label="PWM" {...a11yProps(0)} />
                 <Tab label="Potentiometer" {...a11yProps(1)} />
                 <Tab label="CAN" {...a11yProps(2)} />
+                <Tab label="CAN Message Generator" {...a11yProps(3)} />
               </Tabs>
             </Box>
             <TabPanel value={this.state.tab} index={0}>
@@ -773,36 +932,43 @@ class App extends React.Component {
             </TabPanel>
             <TabPanel value={this.state.tab} index={1}>
               <Pot
-                name="pot1"
+                name="0"
                 Title={"Pot1"}
-                data={this.state.pots.pot1}
+                data={this.state.pots["0"]}
                 PostPots={this.PostPots}
                 setPotWiper={this.setPotWiper}
               />
               <Pot
-                name="pot2"
+                name="1"
                 Title={"Pot2"}
-                data={this.state.pots.pot2}
+                data={this.state.pots["1"]}
                 PostPots={this.PostPots}
                 setPotWiper={this.setPotWiper}
               />
               <Pot
-                name="pot3"
+                name="2"
                 Title={"Pot3"}
-                data={this.state.pots.pot3}
+                data={this.state.pots["2"]}
                 PostPots={this.PostPots}
                 setPotWiper={this.setPotWiper}
               />
               <Pot
-                name="pot4"
+                name="3"
                 Title={"Pot4"}
-                data={this.state.pots.pot4}
+                data={this.state.pots["3"]}
                 PostPots={this.PostPots}
                 setPotWiper={this.setPotWiper}
               />
             </TabPanel>
             <TabPanel value={this.state.tab} index={2}>
-              <CAN_Table data = {this.state.can_rows}></CAN_Table>
+              <CAN_Table data={this.state.can_rows}></CAN_Table>
+            </TabPanel>
+            <TabPanel value={this.state.tab} index={3}>
+              <CAN_Gen_Table
+                data={this.state.can_gen}
+                setCANCell={this.setCANCell}
+                PostCANRow={this.PostCANRow}
+              ></CAN_Gen_Table>
             </TabPanel>
           </Box>
         </body>

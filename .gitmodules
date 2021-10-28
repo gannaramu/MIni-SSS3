@@ -4,3 +4,10 @@
 [submodule "Mini-SSS3-Firmware/lib/Microchip_PAC193x"]
 	path = Mini-SSS3-Firmware/lib/Microchip_PAC193x
 	url = https://github.com/gannaramu/Microchip_PAC193x.git
+[submodule "Mini-SSS3-Firmware/lib/ArduinoThread"]
+	path = Mini-SSS3-Firmware/lib/ArduinoThread
+	url = https://github.com/ivanseidel/ArduinoThread.git
+
+[submodule "Mini-SSS3-Firmware/lib/ArduinoECCX08"]
+	path = Mini-SSS3-Firmware/lib/ArduinoECCX08
+	url = https://github.com/SystemsCyber/ArduinoECCX08.git
