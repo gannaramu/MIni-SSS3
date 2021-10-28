@@ -24,7 +24,8 @@ time_t RTCTime;
 // extern void reloadCAN();
 // Enter a MAC address for your controller below.
 // Newer Ethernet shields have a MAC address printed on a sticker on the shield
-
+void publishMessage();
+void publishPots();
 IPAddress ip(192, 168, 1, 177);
 
 EthernetServer server(80);
@@ -100,6 +101,15 @@ void read_keySw(Request &req, Response &res)
   res.print(ignitionCtlState);
 }
 
+void set_keySw(bool value)
+{
+  ignitionCtlState = value;
+  redLEDstate = value;
+
+  digitalWrite(redLEDpin, redLEDstate);           // Remove Later
+  digitalWrite(ignitionCtlPin, ignitionCtlState); // Remove Later
+}
+
 void update_keySw(Request &req, Response &res)
 {
 
@@ -113,10 +123,8 @@ void update_keySw(Request &req, Response &res)
   }
   else
   {
-    ignitionCtlState = doc["ledOn"];
-    redLEDstate = doc["ledOn"];
-    digitalWrite(redLEDpin, redLEDstate);           // Remove Later
-    digitalWrite(ignitionCtlPin, ignitionCtlState); // Remove Later
+    bool state = doc["ledOn"];
+    set_keySw(state);
 
     // commandPrefix = "50";
     // if (ignitionCtlState)
@@ -124,6 +132,11 @@ void update_keySw(Request &req, Response &res)
     // else
     //   commandString = "0";
     // fastSetSetting();
+    mqttClient.beginMessage("$aws/things/mini-sss3-1/shadow/update");
+    StaticJsonDocument<2048> update;
+    update["state"]["reported"]["KeyOn"]["value"] = state;
+    serializeJson(update, mqttClient);
+    mqttClient.endMessage();
     return read_keySw(req, res);
   }
   // return read_keySw(req, res);
@@ -134,9 +147,9 @@ DynamicJsonDocument getStatus_Pots()
   DynamicJsonDocument response(2048);
   for (int i = 0; i < 4; i++)
   {
-    response["pot" + String(i)]["wiper"]["value"] = SPIpotWiperSettings[i];
-    response["pot" + String(i)]["sw"]["value"] = 0;
-    response["pot" + String(i)]["sw"]["meta"] = "TBD";
+    response[String(i)]["wiper"]["value"] = SPIpotWiperSettings[i];
+    response[String(i)]["sw"]["value"] = 0;
+    response[String(i)]["sw"]["meta"] = "TBD";
   }
 
   return response;
@@ -147,9 +160,9 @@ DynamicJsonDocument getStatus_PWM()
   DynamicJsonDocument response(2048);
   for (int i = 0; i < numPWMs; i++)
   {
-    response["pwm" + String(i)]["duty"]["value"] = pwmValue[i];
-    response["pwm" + String(i)]["frequency"]["value"] = pwmFrequency[i];
-    response["pwm" + String(i)]["switch"]["value"] = 1;
+    response[String(i)]["duty"]["value"] = pwmValue[i];
+    response[String(i)]["frequency"]["value"] = pwmFrequency[i];
+    response[String(i)]["switch"]["value"] = 1;
   }
   return response;
 }
@@ -158,15 +171,14 @@ DynamicJsonDocument getStatus_PAC()
 {
   DynamicJsonDocument response(2048);
   PAC.UpdateVoltage();
-  float temp = PAC.Voltage1;
-  response["pot1"]["voltage"] = PAC.Voltage1 / 1000;
-  response["pot1"]["current"] = -1;
-  response["pot2"]["voltage"] = PAC.Voltage2 / 1000;
-  response["pot2"]["current"] = -1;
-  response["pot3"]["voltage"] = PAC.Voltage4 / 1000;
-  response["pot3"]["current"] = -1;
-  response["pot4"]["voltage"] = PAC.Voltage3 / 1000;
-  response["pot4"]["current"] = -1;
+  response["0"]["voltage"] = PAC.Voltage1 / 1000;
+  response["0"]["current"] = -1;
+  response["1"]["voltage"] = PAC.Voltage2 / 1000;
+  response["1"]["current"] = -1;
+  response["2"]["voltage"] = PAC.Voltage4 / 1000;
+  response["2"]["current"] = -1;
+  response["3"]["voltage"] = PAC.Voltage3 / 1000;
+  response["3"]["current"] = -1;
   return response;
 }
 
@@ -182,16 +194,16 @@ void read_potentiometers(Request &req, Response &res)
 void read_pac1934(Request &req, Response &res)
 {
   char json[2048];
-  Debug.print(DBG_INFO, "Got GET Request for PAC1934: ");
+  Debug.print(DBG_DEBUG, "Got GET Request for PAC1934: ");
   serializeJsonPretty(getStatus_PAC(), json);
-  Debug.print(DBG_DEBUG, json);
+  // Debug.print(DBG_DEBUG, json);
   res.print(json);
 }
 
 void read_PWM(Request &req, Response &res)
 {
   char json[2048];
-  Debug.print(DBG_INFO, "Got GET Request for PAC1934: ");
+  Debug.print(DBG_DEBUG, "Got GET Request for PAC1934: ");
   serializeJsonPretty(getStatus_PWM(), json);
   Debug.print(DBG_DEBUG, json);
   res.print(json);
@@ -199,24 +211,61 @@ void read_PWM(Request &req, Response &res)
 
 void read_CAN(Request &req, Response &res)
 {
-  if (DEBUG)
-    Serial.print("Got GET Request for Read CAN: ");
+  Debug.print(DBG_DEBUG, "Got GET Request for Read CAN:");
   char json[2048];
   serializeJsonPretty(can_dict, json);
   // if (DEBUG) Serial.println(json);
   res.print(json);
 }
 
-int digitalPotWrite(int value, int CS)
+uint8_t MCP41HVI2C_SetWiper(int pin, int potValue)
 {
-  byte address = 0x00;
-  digitalWrite(CS, LOW);
-  SPI.transfer(address);
-  SPI.transfer(value);
-  digitalWrite(CS, HIGH);
+  digitalWrite(pin, LOW);
+  SPI.transfer(0x00); //Write to wiper Register
+  SPI.transfer(potValue);
+  SPI.transfer(0x0C);                  //Read command
+  uint8_t result = SPI.transfer(0xFF); //Read Wiper Register
+  digitalWrite(pin, HIGH);
+  return result;
 }
 
-void update_potentiometers(Request &req, Response &res)
+uint8_t MCP41HVI2C_SetTerminals(uint8_t pin, uint8_t TCON_Value)
+{
+  digitalWrite(pin, LOW);
+  SPI1.transfer(0x40); //Write to TCON Register
+  SPI1.transfer(TCON_Value + 8);
+  SPI1.transfer(0x4C);                 //Read Command
+  uint8_t result = SPI.transfer(0xFF); //Read Terminal Connection (TCON) Register
+  digitalWrite(pin, HIGH);
+
+  return result & 0x07;
+}
+
+void update_Pots(int idx, int value)
+{
+  if (value > 256)
+  {
+    Debug.print(DBG_WARNING, "Value: %d is out of bound setting it to 256", value);
+    value = 256;
+  }
+  else if (value < 0)
+  {
+    Debug.print(DBG_WARNING, "Value: %d is out of bound setting it to 0", value);
+    value = 0;
+  }
+
+  if (idx > numSPIpots)
+  {
+    Debug.print(DBG_ERROR, "idx : %d is out of range of numSPIpots: %d", idx, numSPIpots);
+    return;
+  }
+  Debug.print(DBG_INFO, "Entered update_Pots function with idx: %d, value: %d: ", idx, value);
+  SPIpotWiperSettings[idx] = value;
+  MCP41HVI2C_SetWiper(SPIpotCS[idx], value);
+
+}
+
+void on_POST_Pots(Request &req, Response &res)
 {
 
   // JsonObject& config = jb.parseObject( &req);
@@ -229,31 +278,29 @@ void update_potentiometers(Request &req, Response &res)
   }
   else
   {
-    if (doc["pot1"])
+    if (doc["0"])
     {
-      SPIpotWiperSettings[0] = doc["pot1"]["wiper"]["value"];
-      digitalPotWrite(SPIpotWiperSettings[0], CS_U1);
+      update_Pots(0, doc["0"]["wiper"]["value"]);
     }
-    if (doc["pot2"])
+    if (doc["1"])
     {
-      SPIpotWiperSettings[1] = doc["pot2"]["wiper"]["value"];
-      digitalPotWrite(SPIpotWiperSettings[1], CS_U2);
+      update_Pots(1, doc["1"]["wiper"]["value"]);
     }
-    if (doc["pot3"])
+    if (doc["2"])
     {
-      SPIpotWiperSettings[2] = doc["pot3"]["wiper"]["value"];
-      digitalPotWrite(SPIpotWiperSettings[2], CS_U3);
+      update_Pots(2, doc["2"]["wiper"]["value"]);
     }
-    if (doc["pot4"])
+    if (doc["3"])
     {
-      SPIpotWiperSettings[3] = doc["pot4"]["wiper"]["value"];
-      digitalPotWrite(SPIpotWiperSettings[3], CS_U4);
+      update_Pots(3, doc["3"]["wiper"]["value"]);
     }
+    publishPots();
+
     return read_potentiometers(req, res);
   }
 }
 
-void update_pwm(Request &req, Response &res)
+void on_POST_PWM(Request &req, Response &res)
 {
 }
 
@@ -280,10 +327,11 @@ void connectMQTT()
   mqttClient.subscribe("update/PAC");
   mqttClient.subscribe("update/Pots");
   mqttClient.subscribe("$aws/things/mini-sss3-1/shadow/get/accepted");
-  mqttClient.subscribe("$aws/things/mini-sss3-1/shadow/update/delta");
+  mqttClient.subscribe("$aws/things/mini-sss3-1/shadow/update/accepted");
 
   mqttClient.beginMessage("$aws/things/mini-sss3-1/shadow/get");
   mqttClient.endMessage();
+  publishMessage();
 }
 
 void onMessageReceived(int messageSize)
@@ -303,10 +351,42 @@ void onMessageReceived(int messageSize)
 
   for (JsonPair kv : root)
   {
-    Serial.println(kv.key().c_str());
+    // Serial.println(kv.key().c_str());
     if (kv.key() == "state")
     {
-      serializeJsonPretty(kv.value(), Serial);
+
+      // serializeJsonPretty(kv.value(), Serial);
+      JsonObject d_state = kv.value().as<JsonObject>();
+      JsonObject r_state = d_state["reported"];
+      for (JsonPair kw : r_state)
+      {
+        // Debug.print(DBG_DEBUG, "Entered 2nd for loop");
+        // Serial.print(kw.key().c_str());
+        // serializeJsonPretty(kw.value(), Serial);
+        if (kw.key() == "Pots")
+        {
+          Debug.print(DBG_DEBUG, "Entered Pots");
+          // serializeJsonPretty(kw.value(), Serial);
+          JsonObject Pots = kw.value().as<JsonObject>();
+          for (JsonPair kp : Pots)
+          {
+            JsonObject Pot = kp.value().as<JsonObject>();
+            uint8_t val = Pot["wiper"]["value"];
+            Debug.print(DBG_INFO, "got Wiper value: %d for pot%s", val, kp.key().c_str());
+            update_Pots(atoi(kp.key().c_str()), val);
+          }
+        }
+        else if (kw.key() == "PWM")
+        {
+        }
+        else if (kw.key() == "KeyOn")
+        {
+          JsonObject KeyOn = kw.value().as<JsonObject>();
+          bool val = KeyOn["value"];
+          Debug.print(DBG_INFO, "AWS: got KeyOn value: %d ", val);
+          set_keySw(val);
+        }
+      }
     }
     // Serial.println();
   }
@@ -315,19 +395,6 @@ void onMessageReceived(int messageSize)
 void publishMessage()
 {
   Debug.print(DBG_INFO, "Publishing message");
-
-  // send message, the Print interface can be used to set the message contents
-  // mqttClient.beginMessage("PAC");
-  // serializeJson(getStatus_PAC(), mqttClient);
-  // mqttClient.endMessage();
-
-  // mqttClient.beginMessage("PWM");
-  // serializeJson(getStatus_PWM(), mqttClient);
-  // mqttClient.endMessage();
-
-  // mqttClient.beginMessage("Pots");
-  // serializeJson(getStatus_Pots(), mqttClient);
-  // mqttClient.endMessage();
 
   mqttClient.beginMessage("$aws/things/mini-sss3-1/shadow/update");
   StaticJsonDocument<2048> update;
@@ -346,13 +413,37 @@ void publishMessage()
   update["state"]["reported"]["PAC"] = getStatus_PAC();
   serializeJson(update, mqttClient);
   mqttClient.endMessage();
+
+  mqttClient.beginMessage("$aws/things/mini-sss3-1/shadow/update");
+  update.clear();
+  update["state"]["reported"]["KeyOn"]["value"] = ignitionCtlState;
+  serializeJson(update, mqttClient);
+  mqttClient.endMessage();
 }
 
+void publishPAC()
+{
+  mqttClient.beginMessage("$aws/things/mini-sss3-1/shadow/update");
+  StaticJsonDocument<2048> update;
+  update["state"]["reported"]["PAC"] = getStatus_PAC();
+  serializeJson(update, mqttClient);
+  mqttClient.endMessage();
+}
+
+void publishPots()
+{
+  mqttClient.beginMessage("$aws/things/mini-sss3-1/shadow/update");
+  StaticJsonDocument<2048> update;
+  update["state"]["reported"]["Pots"] = getStatus_Pots();
+  serializeJson(update, mqttClient);
+  mqttClient.endMessage();
+}
 void setup()
 {
   setPinModes();
   Wire.begin();
   SPI.begin();
+  Debug.setDebugLevel(DBG_INFO);
 
   // Get burned in MAC address
   byte mac[6];
@@ -401,7 +492,7 @@ void setup()
   app.put("/led", &update_keySw);
   app.post("/led", &update_keySw);
   app.get("/pots", &read_potentiometers);
-  app.post("/pots", &update_potentiometers);
+  app.post("/pots", &on_POST_Pots);
   app.get("/voltage", &read_pac1934);
   app.get("/can", &read_CAN);
   app.get("/cangen", &read_CAN_Gen);
@@ -431,21 +522,12 @@ void loop()
   if (millis() - lastMillis > 5000)
   {
     lastMillis = millis();
-
-    publishMessage();
+    publishPAC();
+    // publishMessage();
   }
 
-  // SSLClient client(base_client, TAs, (size_t)TAs_NUM, rand_pin);
-
-  // WriteLoggingStream loggingClient(client, Serial);
-  // loggingClient.println("GET / HTTP/1.1");
-  // loggingClient.println("User-Agent: Arduino");
-
-  // deserializeJson(doc, loggingStream);
-  // loggingStream.write("test");
   if (client.connected())
   {
-    Debug.print(DBG_INFO, "Client connected");
     app.process(&client);
   }
   if (Can1.read(msg))

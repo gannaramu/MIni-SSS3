@@ -312,10 +312,10 @@ class App extends React.Component {
         // },
       },
       pots: {
-        pot1: pot1,
-        pot2: pot2,
-        pot3: pot3,
-        pot4: pot4,
+        "0": pot1,
+        "1": pot2,
+        "2": pot3,
+        "3": pot4,
       },
       can_rows: [],
       can_gen: {},
@@ -524,8 +524,8 @@ class App extends React.Component {
   }
 
   setPotWiper(name, value) {
-    //console.log("Input of setPotWiper", name, value);
-    // //console.log("State:", this.state.pwm);
+    // console.log("Input of setPotWiper", name, value);
+    // console.log("State:", this.state.pwm);
     let items = this.state.pots;
     //console.log("Items:", items);
     let item = { ...items[name] };
@@ -539,6 +539,8 @@ class App extends React.Component {
       item.wiper.helperText = "";
       items[name] = item;
     }
+
+    // console.log("items: ", items);
     this.setState({
       pots: items,
     });
@@ -573,13 +575,13 @@ class App extends React.Component {
     for (const [key, value] of Object.entries(state)) {
       let item = { ...items[key] };
       for (const [key2, value] of Object.entries(value)) {
-        // //console.log(key, key2,value);
-        // //console.log(item);
+        // console.log(key, key2,value);
+        // console.log(item);
         item["monitor"][key2] = value;
       }
       items[key] = item;
     }
-    // //console.log("items: ", items);
+    // console.log("item s: ", items);
     this.setState({
       pots: items,
     });
@@ -587,7 +589,7 @@ class App extends React.Component {
 
   // CAN Gen
   setCANGenState_fromResponse(state) {
-    console.log("input of setCANGenState from response", state);
+    // console.log("input of setCANGenState from response", state);
     let items = this.state.can_gen;
     for (const [ThreadID, value] of Object.entries(state)) {
       if (!(ThreadID in items)) {
@@ -623,7 +625,7 @@ class App extends React.Component {
       // console.log("Index of : ", ThreadID,items.indexOf(item,0));
       items[ThreadID] = item;
     }
-    console.log("items: ", items);
+    // console.log("items: ", items);
     this.setState({
       can_gen: items,
     });
@@ -642,7 +644,7 @@ class App extends React.Component {
   }
 
   async PostCANRow(id) {
-    console.log("PostCANRow: ", id);
+    // console.log("PostCANRow: ", id);
     let items = [...this.state.can_gen];
     let item = { ...items[id] };
 
@@ -666,7 +668,7 @@ class App extends React.Component {
     myHeaders.append("Content-Type", "application/json");
     var body = item;
     var raw = JSON.stringify(body);
-    console.log(raw);
+    // console.log(raw);
 
     var requestOptions = {
       method: "POST",
@@ -758,7 +760,7 @@ class App extends React.Component {
     ]);
     const interval = setInterval(() => {
       this.read_voltage();
-    }, 1000);
+    }, 500);
     const can_interval = setInterval(() => {
       this.read_CAN();
     }, 100);
@@ -930,30 +932,30 @@ class App extends React.Component {
             </TabPanel>
             <TabPanel value={this.state.tab} index={1}>
               <Pot
-                name="pot1"
+                name="0"
                 Title={"Pot1"}
-                data={this.state.pots.pot1}
+                data={this.state.pots["0"]}
                 PostPots={this.PostPots}
                 setPotWiper={this.setPotWiper}
               />
               <Pot
-                name="pot2"
+                name="1"
                 Title={"Pot2"}
-                data={this.state.pots.pot2}
+                data={this.state.pots["1"]}
                 PostPots={this.PostPots}
                 setPotWiper={this.setPotWiper}
               />
               <Pot
-                name="pot3"
+                name="2"
                 Title={"Pot3"}
-                data={this.state.pots.pot3}
+                data={this.state.pots["2"]}
                 PostPots={this.PostPots}
                 setPotWiper={this.setPotWiper}
               />
               <Pot
-                name="pot4"
+                name="3"
                 Title={"Pot4"}
-                data={this.state.pots.pot4}
+                data={this.state.pots["3"]}
                 PostPots={this.PostPots}
                 setPotWiper={this.setPotWiper}
               />

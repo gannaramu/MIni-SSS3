@@ -15,13 +15,13 @@ export default function CAN_Gen_Table(props) {
   });
 
   const cellHandler = useCallback((params) => {
-    console.log("cellHandler Change Handler Inputs: ",params.id,params.field,params.props.value );
+    // console.log("cellHandler Change Handler Inputs: ",params.id,params.field,params.props.value );
     // props.setCANCell(params.id,params.field,params.props.value );
   });
 
 
   const upateCompleate = useCallback((id) => {
-    console.log("upateCompleate Inputs: ",id);
+    // console.log("upateCompleate Inputs: ",id);
     props.PostCANRow(id);
   });
 
