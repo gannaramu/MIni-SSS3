@@ -1,7 +1,7 @@
 #define ARDUINO_ETHERNET_SHIELD
 #define BOARD_HAS_ECCX08
 #define ARDUINOJSON_ENABLE_PROGMEM 0
-
+#include "Arduino_DebugUtils.h"
 #include <Arduino.h>
 #include <SPI.h>
 #include <Ethernet.h>
@@ -17,7 +17,6 @@
 #include <ArduinoMqttClient.h>
 #include <arduino_secrets.h>
 #include <TimeLib.h>
-#include "Arduino_DebugUtils.h"
 
 time_t RTCTime;
 
@@ -219,7 +218,7 @@ void read_CAN(Request &req, Response &res)
   res.print(json);
 }
 
-uint8_t MCP41HVI2C_SetWiper(int pin, int potValue)
+uint8_t MCP41HV_SetWiper(int pin, int potValue)
 {
   digitalWrite(pin, LOW);
   SPI.transfer(0x00); //Write to wiper Register
@@ -230,7 +229,7 @@ uint8_t MCP41HVI2C_SetWiper(int pin, int potValue)
   return result;
 }
 
-uint8_t MCP41HVI2C_SetTerminals(uint8_t pin, uint8_t TCON_Value)
+uint8_t MCP41HV_SetTerminals(uint8_t pin, uint8_t TCON_Value)
 {
   digitalWrite(pin, LOW);
   SPI1.transfer(0x40); //Write to TCON Register
@@ -262,7 +261,7 @@ void update_Pots(uint8_t idx, int value)
   }
   Debug.print(DBG_INFO, "Entered update_Pots function with idx: %d, value: %d: ", idx, value);
   SPIpotWiperSettings[idx] = value;
-  MCP41HVI2C_SetWiper(SPIpotCS[idx], value);
+  MCP41HV_SetWiper(SPIpotCS[idx], value);
 }
 
 void on_POST_Pots(Request &req, Response &res)
