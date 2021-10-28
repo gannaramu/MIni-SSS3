@@ -274,12 +274,12 @@ class App extends React.Component {
       ledOn: false,
       tab: 0,
       pwm: {
-        pwm1: pwm1,
-        pwm2: pwm2,
-        pwm3: pwm3,
-        pwm4: pwm4,
-        pwm5: pwm5,
-        pwm6: pwm6,
+        "0": pwm1,
+        "1": pwm2,
+        "2": pwm3,
+        "3": pwm4,
+        "4": pwm5,
+        "5": pwm6,
         // {
         //   // duty: { value: 0, error: 0, helperText: "test" },
         //   // freq: { value: 0, error: 0, helperText: "test" },
@@ -378,7 +378,7 @@ class App extends React.Component {
   }
 
   setPWMDuty(name, duty) {
-    //console.log("Input of setPWMDuty", name, duty);
+    console.log("Input of setPWMDuty", name, duty);
     // //console.log("State:", this.state.pwm);
     let items = this.state.pwm;
     //console.log("Items:", items);
@@ -421,7 +421,7 @@ class App extends React.Component {
   }
 
   setPWMSwitch(name, value) {
-    //console.log("Input of setPWMSwitch", name, value);
+    // console.log("Input of setPWMSwitch", name, value);
     let items = this.state.pwm;
     //console.log("Items:", items);
     let item = { ...items[name] };
@@ -870,8 +870,8 @@ class App extends React.Component {
             </Box>
             <TabPanel value={this.state.tab} index={0}>
               <PWM
-                name="pwm1"
-                data={this.state.pwm.pwm1}
+                name="0"
+                data={this.state.pwm["0"]}
                 Title={"PWM1"}
                 setPWMSwitch={this.setPWMSwitch}
                 setPWMDuty={this.setPWMDuty}
@@ -880,8 +880,8 @@ class App extends React.Component {
                 post_pwm={this.post_pwm}
               />
               <PWM
-                name="pwm2"
-                data={this.state.pwm.pwm2}
+                name="1"
+                data={this.state.pwm["1"]}
                 Title={"PWM2"}
                 setPWMSwitch={this.setPWMSwitch}
                 setPWMDuty={this.setPWMDuty}
@@ -890,8 +890,8 @@ class App extends React.Component {
                 post_pwm={this.post_pwm}
               />
               <PWM
-                name="pwm3"
-                data={this.state.pwm.pwm3}
+                name="2"
+                data={this.state.pwm["2"]}
                 Title={"PWM3"}
                 setPWMSwitch={this.setPWMSwitch}
                 setPWMDuty={this.setPWMDuty}
@@ -900,8 +900,8 @@ class App extends React.Component {
                 post_pwm={this.post_pwm}
               />
               <PWM
-                name="pwm4"
-                data={this.state.pwm.pwm4}
+                name="3"
+                data={this.state.pwm["3"]}
                 Title={"PWM4"}
                 setPWMSwitch={this.setPWMSwitch}
                 setPWMDuty={this.setPWMDuty}
@@ -910,8 +910,8 @@ class App extends React.Component {
                 post_pwm={this.post_pwm}
               />
               <PWM
-                name="pwm5"
-                data={this.state.pwm.pwm5}
+                name="4"
+                data={this.state.pwm["4"]}
                 Title={"PWM5"}
                 setPWMSwitch={this.setPWMSwitch}
                 setPWMDuty={this.setPWMDuty}
@@ -920,8 +920,8 @@ class App extends React.Component {
                 post_pwm={this.post_pwm}
               />
               <PWM
-                name="pwm6"
-                data={this.state.pwm.pwm6}
+                name="5"
+                data={this.state.pwm["5"]}
                 Title={"PWM6"}
                 setPWMSwitch={this.setPWMSwitch}
                 setPWMDuty={this.setPWMDuty}
