@@ -476,18 +476,18 @@ class App extends React.Component {
   }
 
   
-  async post_pwm() {
-    //console.log("input to post_pwm: ", this.state.pwm);
-
+  async post_pwm(name) {
+    // console.log("input to post_pwm: ", name);
     var myHeaders = new Headers();
     myHeaders.append("Content-Type", "application/json");
-    var body = this.state.pwm;
-    var raw = JSON.stringify(body);
+    var pots_body = this.state.pwm[name];
+    var obj = {};
+    obj[name] = pots_body;
 
     var requestOptions = {
       method: "POST",
       headers: myHeaders,
-      body: raw,
+      body: JSON.stringify(obj),
       redirect: "follow",
     };
 
@@ -495,10 +495,6 @@ class App extends React.Component {
     let state = await response.json();
     //console.log(state);
     this.setPWMState_fromResponse(state);
-    // this.setState({
-    //   ledOn: state !== "0",
-    // });
-    //console.log(this.state);
   }
 
   // Pots 
@@ -545,6 +541,7 @@ class App extends React.Component {
       pots: items,
     });
   }
+
   async PostPots(name) {
     //console.log("input to post_pot: ", name);
 
@@ -737,8 +734,6 @@ class App extends React.Component {
   }
 
 
- 
-
   componentDidMount() {
     Promise.all([
       fetch("/led")
@@ -772,13 +767,7 @@ class App extends React.Component {
     
   }
 
-  async handleStateChange(ledOn) {
-    // //console.log("input to handleStateChange: ", ledOn);
-    this.setPWMDuty("pwm1", 48);
-    //console.log(this.state.pwm);
-  }
-
-  async handleStateChange2(event) {
+  async handleKeySwButton(event) {
     //console.log("input to handleStateChange2: ", event.target.checked);
 
     var myHeaders = new Headers();
@@ -842,17 +831,17 @@ class App extends React.Component {
             <Switch
               checked={this.state.ledOn}
               id="ledOn"
-              onChange={(event) => this.handleStateChange2(event)}
+              onChange={(event) => this.handleKeySwButton(event)}
             />
             <Typography>On</Typography>
           </Stack>
-          <Stack direction="row" spacing={1} alignItems="center">
+          {/* <Stack direction="row" spacing={1} alignItems="center">
             <Typography>Off</Typography>
             <MaterialUISwitch
               onChange={(event) => this.handleStateChange(event)}
             />
             <Typography>On</Typography>
-          </Stack>
+          </Stack> */}
 
           <Box sx={{ width: "100%" }}>
             <Box sx={{ borderBottom: 1, borderColor: "divider" }}>

@@ -1,6 +1,7 @@
 #define ARDUINO_ETHERNET_SHIELD
 #define BOARD_HAS_ECCX08
 #define ARDUINOJSON_ENABLE_PROGMEM 0
+#define DEBUGSERIAL
 #include "Arduino_DebugUtils.h"
 #include <Arduino.h>
 #include <SPI.h>
@@ -326,7 +327,7 @@ void update_PWM(uint8_t idx, int duty, int freq)
   {
     Debug.print(DBG_WARNING, "Frequency: %d is out of bound setting it to 0", freq);
     freq = 0;
-  }
+}
 
   Debug.print(DBG_INFO, "Entered update_PWM function with idx: %d, duty: %d, freq: %d: ", idx, duty, freq);
   pwmValue[idx] = duty;
@@ -347,31 +348,47 @@ void on_POST_PWM(Request &req, Response &res)
   }
   else
   {
-    Debug.print(DBG_INFO, "Got POST Request for PWM 0: ");
+    Debug.print(DBG_INFO, "Got POST Request for PWM");
 
     if (doc["0"])
     {
       String duty = doc["0"]["duty"]["value"];
       String freq = doc["0"]["freq"]["value"];
-      update_PWM(0, duty.toInt(), freq.toInt());
+      int sw = doc["0"]["sw"]["value"];
+      if(sw==1)
+        update_PWM(0, duty.toInt(), freq.toInt());
+      else
+        update_PWM(0, 0, 0);
     }
     if (doc["1"])
     {
       String duty = doc["1"]["duty"]["value"];
       String freq = doc["1"]["freq"]["value"];
-      update_PWM(1, duty.toInt(), freq.toInt());
+      int sw = doc["1"]["sw"]["value"];
+      if(sw==1)
+        update_PWM(1, duty.toInt(), freq.toInt());
+      else
+        update_PWM(1, 0, 0);
     }
     if (doc["2"])
     {
       String duty = doc["2"]["duty"]["value"];
       String freq = doc["2"]["freq"]["value"];
-      update_PWM(2, duty.toInt(), freq.toInt());
+      int sw = doc["2"]["sw"]["value"];
+      if(sw==1)
+        update_PWM(2, duty.toInt(), freq.toInt());
+      else
+        update_PWM(2, 0, 0);
     }
     if (doc["3"])
     {
       String duty = doc["3"]["duty"]["value"];
       String freq = doc["3"]["freq"]["value"];
-      update_PWM(3, duty.toInt(), freq.toInt());
+      int sw = doc["3"]["sw"]["value"];
+      if(sw==1)
+        update_PWM(3, duty.toInt(), freq.toInt());
+      else
+        update_PWM(3, 0, 0);
     }
     publishPWM();
   }
